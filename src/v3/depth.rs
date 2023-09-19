@@ -28,6 +28,7 @@ pub struct DepthOutput {
 
 #[async_trait]
 pub trait DepthEndpoint {
+    /// Order book
     async fn depth(&self, params: DepthParams<'_>) -> ApiV3Result<DepthOutput>;
 }
 
