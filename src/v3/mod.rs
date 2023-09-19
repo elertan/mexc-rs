@@ -7,6 +7,7 @@ pub mod ping;
 pub mod time;
 pub mod default_symbols;
 pub mod exchange_information;
+pub mod trades;
 
 pub type ApiV3Result<T> = Result<T, ApiV3Error>;
 

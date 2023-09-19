@@ -94,3 +94,10 @@ pub enum ChangedType {
     Sugar,
     EtfIndex,
 }
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum TradeType {
+    Ask,
+    Bid
+}
