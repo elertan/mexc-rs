@@ -70,4 +70,12 @@ impl MexcApiClientWithAuthentication {
             secret_key,
         }
     }
+
+    #[cfg(test)]
+    fn new_for_test() -> Self {
+        dotenv::dotenv().ok();
+        let api_key = std::env::var("MEXC_API_KEY").expect("MEXC_API_KEY not set");
+        let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
+        Self::new(MexcApiEndpoint::Base, api_key, secret_key)
+    }
 }

@@ -8,6 +8,7 @@ pub mod time;
 pub mod default_symbols;
 pub mod exchange_information;
 pub mod trades;
+pub mod order;
 
 pub type ApiV3Result<T> = Result<T, ApiV3Error>;
 
@@ -54,5 +55,19 @@ impl From<reqwest::Error> for ApiV3Error {
             StatusCode::INTERNAL_SERVER_ERROR => Self::InternalServerError,
             _ => Self::ReqwestError(err),
         }
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWithSignature<'a, T> {
+    #[serde(flatten)]
+    pub query: T,
+    pub signature: &'a str,
+}
+
+impl<'a, T> QueryWithSignature<'a, T> {
+    pub fn new(query: T, signature: &'a str) -> Self {
+        Self { query, signature }
     }
 }
