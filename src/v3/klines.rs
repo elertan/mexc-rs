@@ -1,0 +1,202 @@
+use async_trait::async_trait;
+use bigdecimal::BigDecimal;
+use chrono::{DateTime, TimeZone, Utc};
+use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
+use crate::v3::{ApiV3Error, ApiV3Result};
+use crate::v3::enums::KlineInterval;
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KlinesParams<'a> {
+    /// Symbol
+    pub symbol: &'a str,
+    /// Interval
+    pub interval: KlineInterval,
+    /// Start time
+    #[serde(with = "chrono::serde::ts_seconds_option")]
+    pub start_time: Option<DateTime<Utc>>,
+    /// End time
+    #[serde(with = "chrono::serde::ts_seconds_option")]
+    pub end_time: Option<DateTime<Utc>>,
+    /// default 500; max 1000
+    pub limit: Option<u32>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KlinesOutput {
+    pub klines: Vec<Kline>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Kline {
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub open_time: DateTime<Utc>,
+    pub open: BigDecimal,
+    pub high: BigDecimal,
+    pub low: BigDecimal,
+    pub close: BigDecimal,
+    pub volume: BigDecimal,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub close_time: DateTime<Utc>,
+    pub quote_asset_volume: BigDecimal,
+}
+
+#[async_trait]
+pub trait KlinesEndpoint {
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput>;
+}
+
+async fn klines_impl(
+    endpoint: &MexcApiEndpoint,
+    client: &reqwest::Client,
+    params: KlinesParams<'_>,
+) -> ApiV3Result<KlinesOutput> {
+    let endpoint = format!("{}/api/v3/klines", endpoint.as_ref());
+    let response = client.get(&endpoint).query(&params).send().await?;
+    let value = response.json::<serde_json::Value>().await?;
+
+    let serde_json::Value::Array(kline_values) = value else {
+        return Err(ApiV3Error::UnableToParseResponse);
+    };
+
+    let klines = kline_values
+        .into_iter()
+        .map(|kline_value| {
+            let serde_json::Value::Array(entries) = kline_value else {
+                return Err(ApiV3Error::UnableToParseResponse);
+            };
+
+            let open_time_ts_seconds = entries
+                .get(0)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_i64()
+                .ok_or(ApiV3Error::UnableToParseResponse)?;
+            let open_time = Utc.timestamp_opt(open_time_ts_seconds, 0).unwrap();
+
+            let open = entries
+                .get(1)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for open: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let high = entries
+                .get(2)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for high: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let low = entries
+                .get(3)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for low: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let close = entries
+                .get(4)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for close: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let volume = entries
+                .get(5)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for volume: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let close_time_ts_seconds = entries
+                .get(6)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_i64()
+                .ok_or(ApiV3Error::UnableToParseResponse)?;
+            let close_time = Utc.timestamp_opt(close_time_ts_seconds, 0).unwrap();
+
+            let quote_asset_volume = entries
+                .get(7)
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .as_str()
+                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .parse::<BigDecimal>()
+                .map_err(|err| {
+                    tracing::error!("Unable to parse BigDecimal for quote_asset_volume: {}", err);
+                    ApiV3Error::UnableToParseResponse
+                })?;
+
+            let kline = Kline {
+                open_time,
+                open,
+                high,
+                low,
+                close,
+                volume,
+                close_time,
+                quote_asset_volume,
+            };
+
+            Ok(kline)
+        })
+        .collect::<Result<_, ApiV3Error>>()?;
+
+    let output = KlinesOutput { klines };
+
+    Ok(output)
+}
+
+#[async_trait]
+impl KlinesEndpoint for MexcApiClient {
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput> {
+        klines_impl(&self.endpoint, &self.reqwest_client, params).await
+    }
+}
+
+#[async_trait]
+impl KlinesEndpoint for MexcApiClientWithAuthentication {
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput> {
+        klines_impl(&self.endpoint, &self.reqwest_client, params).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_klines() {
+        let client = MexcApiClient::default();
+        let params = KlinesParams {
+            symbol: "BTCUSDT",
+            interval: KlineInterval::OneMinute,
+            start_time: None,
+            end_time: None,
+            limit: None,
+        };
+        let result = client.klines(params).await;
+        assert!(result.is_ok());
+    }
+}
