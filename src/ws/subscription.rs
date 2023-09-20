@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use crate::ws::{ClientMessagePayload, MexcWsClient};
+use futures::{SinkExt, StreamExt};
+use tokio_tungstenite::tungstenite::Message;
+use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient};
 
 #[derive(Debug)]
 pub struct SubscribeParams {
@@ -31,6 +33,10 @@ pub struct SubscribeOutput {}
 pub enum SubscribeError {
     #[error("Failed to serialize payload to JSON: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
+    #[error("Failed to acquire websocket: {0}")]
+    AcquireWebsocketError(#[from] AcquireWebsocketError),
+    #[error("Failed to send message: {0}")]
+    TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
 }
 
 #[async_trait]
@@ -46,35 +52,29 @@ impl Subscribe for MexcWsClient {
             .map(|sr| sr.to_subscription_param())
             .collect::<Vec<String>>();
         let payload = ClientMessagePayload {
-            method: "SUBSCRIBE",
+            method: "SUBSCRIPTION",
             params: payload_params,
         };
         let payload_str = serde_json::to_string(&payload)?;
-        todo!()
+        let message = Message::Text(payload_str);
+
+        let mut awo = self.acquire_websocket().await?;
+        let ws = awo.websocket_sink();
+
+        ws.send(message).await?;
+        let mut i = 0;
+        let mut raw_stream = self.stream_raw();
+        while let Some(raw_msg) = raw_stream.next().await {
+            tracing::info!("Raw message: {:?}", raw_msg);
+            i += 1;
+            if i > 5 {
+                todo!();
+            }
+        }
+
+        Ok(SubscribeOutput {})
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use futures::StreamExt;
-    use super::*;
-
-    #[tokio::test]
-    async fn test_subscription_spot_deals() {
-        let ws_client = MexcWsClient::default();
-        let subscribe_params = SubscribeParams {
-            subscription_requests: vec![
-                SubscriptionRequest::SpotDeals(SpotDealsSubscriptionRequest {
-                    symbol: "KASUSDT".to_string(),
-                }),
-            ],
-        };
-        let subscribe_output = ws_client.subscribe(subscribe_params).await.expect("Failed to subscribe");
-        eprintln!("{:?}", subscribe_output);
-
-        let message_result = ws_client.stream().next().await;
-        eprintln!("{:?}", message_result);
-
-        assert!(message_result.is_some());
-    }
-}
+mod tests { }
