@@ -11,6 +11,7 @@ pub mod default_symbols;
 pub mod exchange_information;
 pub mod trades;
 pub mod order;
+pub mod cancel_order;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
