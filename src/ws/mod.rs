@@ -1,4 +1,11 @@
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use futures::{Stream, StreamExt};
+use futures::stream::BoxStream;
+use crate::ws::spot_deals::SpotDealsMessage;
+
 pub mod subscription;
+pub mod spot_deals;
 
 pub enum MexcWsEndpoint {
     Base,
@@ -16,11 +23,25 @@ impl AsRef<str> for MexcWsEndpoint {
 
 pub struct MexcWsClient {
     endpoint: MexcWsEndpoint,
+    message_sender: async_broadcast::Sender<MexcWsMessage>,
+    message_receiver: async_broadcast::Receiver<MexcWsMessage>,
 }
 
 impl MexcWsClient {
     pub fn new(endpoint: MexcWsEndpoint) -> Self {
-        Self { endpoint }
+        let (message_sender, message_receiver) = async_broadcast::broadcast(1000000);
+
+        Self { endpoint, message_sender, message_receiver }
+    }
+
+    pub fn stream(&self) -> BoxStream<MexcWsMessage> {
+        let mut mr = self.message_receiver.clone();
+        let stream = async_stream::stream! {
+            while let Ok(message) = mr.recv().await {
+                yield message;
+            }
+        };
+        stream.boxed()
     }
 }
 
@@ -35,4 +56,9 @@ impl Default for MexcWsClient {
 pub struct ClientMessagePayload<'a, T> {
     pub method: &'a str,
     pub params: T,
+}
+
+#[derive(Debug, Clone)]
+pub enum MexcWsMessage {
+    SpotDeals(SpotDealsMessage),
 }

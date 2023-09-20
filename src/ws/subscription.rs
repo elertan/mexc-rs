@@ -28,7 +28,10 @@ impl SubscriptionRequest {
 pub struct SubscribeOutput {}
 
 #[derive(Debug, thiserror::Error)]
-pub enum SubscribeError {}
+pub enum SubscribeError {
+    #[error("Failed to serialize payload to JSON: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+}
 
 #[async_trait]
 pub trait Subscribe {
@@ -46,6 +49,32 @@ impl Subscribe for MexcWsClient {
             method: "SUBSCRIBE",
             params: payload_params,
         };
+        let payload_str = serde_json::to_string(&payload)?;
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use futures::StreamExt;
+    use super::*;
+
+    #[tokio::test]
+    async fn test_subscription_spot_deals() {
+        let ws_client = MexcWsClient::default();
+        let subscribe_params = SubscribeParams {
+            subscription_requests: vec![
+                SubscriptionRequest::SpotDeals(SpotDealsSubscriptionRequest {
+                    symbol: "KASUSDT".to_string(),
+                }),
+            ],
+        };
+        let subscribe_output = ws_client.subscribe(subscribe_params).await.expect("Failed to subscribe");
+        eprintln!("{:?}", subscribe_output);
+
+        let message_result = ws_client.stream().next().await;
+        eprintln!("{:?}", message_result);
+
+        assert!(message_result.is_some());
     }
 }
