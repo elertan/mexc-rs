@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, TimeZone, Utc};
 use reqwest::Client;
-use crate::futures::{MexcFuturesApiClient, MexcFuturesApiEndpoint};
+use crate::futures::{MexcFuturesApiClient, MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
 use crate::futures::response::ApiResponse;
 use crate::futures::result::ApiResult;
 
@@ -21,6 +21,13 @@ async fn default_impl(endpoint: &MexcFuturesApiEndpoint, reqwest: &Client) -> Ap
 
 #[async_trait]
 impl GetServerTime for MexcFuturesApiClient {
+    async fn get_server_time(&self) -> ApiResult<DateTime<Utc>> {
+        default_impl(&self.endpoint, &self.reqwest_client).await
+    }
+}
+
+#[async_trait]
+impl GetServerTime for MexcFuturesApiClientWithAuthentication {
     async fn get_server_time(&self) -> ApiResult<DateTime<Utc>> {
         default_impl(&self.endpoint, &self.reqwest_client).await
     }
