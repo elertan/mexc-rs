@@ -12,6 +12,7 @@ pub mod exchange_information;
 pub mod trades;
 pub mod order;
 pub mod cancel_order;
+pub mod cancel_all_open_orders_on_a_symbol;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
