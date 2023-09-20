@@ -3,6 +3,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
 pub mod v3;
+#[cfg(feature = "ws")]
 pub mod ws;
 
 pub enum MexcSpotApiEndpoint {

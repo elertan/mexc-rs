@@ -8,6 +8,12 @@ repository = "https://github.com/elertan/mexc-rs"
 description = "Rust client for the mexc.com exchange"
 keywords = ["mexc", "exchange", "api", "rest", "websocket"]
 
+[features]
+default = ["spot", "futures", "ws"]
+spot = []
+futures = []
+ws = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
