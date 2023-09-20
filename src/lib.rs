@@ -3,6 +3,7 @@ use sha2::digest::InvalidLength;
 use sha2::Sha256;
 
 pub mod v3;
+pub mod ws;
 
 pub enum MexcApiEndpoint {
     Base,

@@ -46,9 +46,9 @@ impl<'a> From<CancelOrderParams<'a>> for CancelOrderQuery<'a> {
 pub struct CancelOrderOutput {
     pub symbol: String,
     #[serde(rename = "origClientOrderId")]
-    pub original_client_order_id: String,
+    pub original_client_order_id: Option<String>,
     pub order_id: String,
-    pub client_order_id: String,
+    pub client_order_id: Option<String>,
     pub price: BigDecimal,
     #[serde(rename = "origQty")]
     pub original_quantity: BigDecimal,
@@ -57,7 +57,7 @@ pub struct CancelOrderOutput {
     #[serde(rename = "cummulativeQuoteQty")]
     pub cummulative_quote_quantity: BigDecimal,
     pub status: OrderStatus,
-    pub time_in_force: String,
+    pub time_in_force: Option<String>,
     #[serde(rename = "type")]
     pub order_type: OrderType,
     pub side: OrderSide,

@@ -45,8 +45,8 @@ impl<'a> From<GetOrderParams<'a>> for GetOrderQuery<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct GetOrderOutput {
     pub symbol: String,
-    pub order_id: i64,
-    pub client_order_id: String,
+    pub order_id: String,
+    pub client_order_id: Option<String>,
     pub price: BigDecimal,
     #[serde(rename = "origQty")]
     pub original_quantity: BigDecimal,
@@ -55,7 +55,7 @@ pub struct GetOrderOutput {
     #[serde(rename = "cummulativeQuoteQty")]
     pub cummulative_quote_quantity: BigDecimal,
     pub status: OrderStatus,
-    pub time_in_force: String,
+    pub time_in_force: Option<String>,
     #[serde(rename = "type")]
     pub order_type: OrderType,
     pub side: OrderSide,

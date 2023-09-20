@@ -122,7 +122,7 @@ pub enum ErrorCode {
     BadSymbol = 10007,
     UserIdCannotBeNull = 10015,
     InvalidAccessKey = 10072,
-    InvalidRequestTiem = 10073,
+    InvalidRequestTime = 10073,
     AmountCannotBeNull = 10095,
     AmountDecimalPlacesIsTooLong = 10096,
     AmountIsError = 10097,

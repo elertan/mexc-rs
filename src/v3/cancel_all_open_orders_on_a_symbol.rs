@@ -40,10 +40,8 @@ pub struct CancelAllOpenOrdersOnASymbolOutput {
 #[serde(rename_all = "camelCase")]
 pub struct CanceledOrder {
     pub symbol: String,
-    #[serde(rename = "origClientOrderId")]
-    pub original_client_order_id: String,
     pub order_id: String,
-    pub client_order_id: String,
+    pub client_order_id: Option<String>,
     pub price: BigDecimal,
     #[serde(rename = "origQty")]
     pub original_quantity: BigDecimal,
@@ -52,7 +50,7 @@ pub struct CanceledOrder {
     #[serde(rename = "cummulativeQuoteQty")]
     pub cummulative_quote_quantity: BigDecimal,
     pub status: OrderStatus,
-    pub time_in_force: String,
+    pub time_in_force: Option<String>,
     #[serde(rename = "type")]
     pub order_type: OrderType,
     pub side: OrderSide,
@@ -93,5 +91,14 @@ mod tests {
         };
         let result = client.cancel_all_open_orders_on_a_symbol(params).await;
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn deserialize() {
+        let json = r#"
+            [{"symbol":"KASUSDT","orderId":"C01__333180898079965185","price":"0.001","origQty":"5000","type":"LIMIT","side":"BUY","executedQty":"0","cummulativeQuoteQty":"0","status":"NEW"}]
+        "#;
+        // serde path to error
+        let canceled_orders = serde_json::from_str::<Vec<CanceledOrder>>(json).unwrap();
     }
 }
