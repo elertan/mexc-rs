@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiV3Result, QueryWithSignature};
-use crate::v3::enums::{OrderSide, OrderType, TradeType};
+use crate::{MexcApiClientWithAuthentication};
+use crate::v3::{ApiResponse, ApiResult};
+use crate::v3::enums::{OrderSide, OrderType};
 
 #[derive(Debug)]
 pub struct OrderParams<'a> {
@@ -34,7 +34,7 @@ pub struct OrderQuery<'a> {
     /// Max 60000
     #[serde(skip_serializing_if = "Option::is_none")]
     pub recv_window: Option<u64>,
-    #[serde(with = "chrono::serde::ts_seconds")]
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub timestamp: DateTime<Utc>,
 }
 
@@ -65,25 +65,26 @@ pub struct OrderOutput {
     #[serde(rename = "type")]
     pub order_type: OrderType,
     pub side: OrderSide,
-    #[serde(with = "chrono::serde::ts_seconds")]
+    #[serde(with = "chrono::serde::ts_milliseconds")]
     pub transact_time: DateTime<Utc>,
 }
 
 
 #[async_trait]
 pub trait OrderEndpoint {
-    async fn order(&self, params: OrderParams<'_>) -> ApiV3Result<OrderOutput>;
+    async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput>;
 }
 
 #[async_trait]
 impl OrderEndpoint for MexcApiClientWithAuthentication {
-    async fn order(&self, params: OrderParams<'_>) -> ApiV3Result<OrderOutput> {
+    async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput> {
         let endpoint = format!("{}/api/v3/order", self.endpoint.as_ref());
         let query = OrderQuery::from(params);
-        let signature = "";
-        let query_with_signature = QueryWithSignature::new(query, signature);
-        let response = self.reqwest_client.get(&endpoint).query(&query_with_signature).send().await?;
-        let output = response.json::<OrderOutput>().await?;
+        let query_with_signature = self.sign_query(query)?;
+
+        let response = self.reqwest_client.post(&endpoint).query(&query_with_signature).send().await?;
+        let api_response = response.json::<ApiResponse<OrderOutput>>().await?;
+        let output = api_response.into_api_result()?;
 
         Ok(output)
     }
@@ -96,14 +97,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_order() {
+        // Fails on insufficient balance
         let client = MexcApiClientWithAuthentication::new_for_test();
         let params = OrderParams {
             symbol: "KASUSDT",
             side: OrderSide::Buy,
             order_type: OrderType::Limit,
-            quantity: Some(BigDecimal::from(1)),
+            quantity: Some(BigDecimal::from(5000)),
             quote_order_quantity: None,
-            price: Some(BigDecimal::from_str("0.00001").unwrap()),
+            price: Some(BigDecimal::from_str("0.001").unwrap()),
             new_client_order_id: None,
         };
         let result = client.order(params).await;

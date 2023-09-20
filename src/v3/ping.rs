@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiV3Result;
+use crate::v3::ApiResult;
 
 #[async_trait]
 pub trait PingEndpoint {
     /// Test connectivity to the Rest API.
-    async fn ping(&self) -> ApiV3Result<()>;
+    async fn ping(&self) -> ApiResult<()>;
 }
 
-async fn ping_impl(endpoint: &MexcApiEndpoint, client: &reqwest::Client) -> ApiV3Result<()> {
+async fn ping_impl(endpoint: &MexcApiEndpoint, client: &reqwest::Client) -> ApiResult<()> {
     let endpoint = format!("{}/api/v3/ping", endpoint.as_ref());
     client.get(&endpoint).send().await?;
 
@@ -17,14 +17,14 @@ async fn ping_impl(endpoint: &MexcApiEndpoint, client: &reqwest::Client) -> ApiV
 
 #[async_trait]
 impl PingEndpoint for MexcApiClient {
-    async fn ping(&self) -> ApiV3Result<()> {
+    async fn ping(&self) -> ApiResult<()> {
         ping_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
 
 #[async_trait]
 impl PingEndpoint for MexcApiClientWithAuthentication {
-    async fn ping(&self) -> ApiV3Result<()> {
+    async fn ping(&self) -> ApiResult<()> {
         ping_impl(&self.endpoint, &self.reqwest_client).await
     }
 }

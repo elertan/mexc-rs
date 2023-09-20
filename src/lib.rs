@@ -1,3 +1,7 @@
+use hmac::{Hmac, Mac};
+use sha2::digest::InvalidLength;
+use sha2::Sha256;
+
 pub mod v3;
 
 pub enum MexcApiEndpoint {
@@ -71,6 +75,17 @@ impl MexcApiClientWithAuthentication {
         }
     }
 
+    fn sign_query<T>(&self, query: T) -> Result<QueryWithSignature<T>, SignQueryError> where T: serde::Serialize {
+        let query_string = serde_urlencoded::to_string(&query)?;
+        let mut mac = Hmac::<Sha256>::new_from_slice(self.secret_key.as_bytes())?;
+        mac.update(query_string.as_bytes());
+        let mac_result = mac.finalize();
+        let mac_bytes = mac_result.into_bytes();
+        let signature = hex::encode(mac_bytes);
+
+        Ok(QueryWithSignature::new(query, signature))
+    }
+
     #[cfg(test)]
     fn new_for_test() -> Self {
         dotenv::dotenv().ok();
@@ -78,4 +93,27 @@ impl MexcApiClientWithAuthentication {
         let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
         Self::new(MexcApiEndpoint::Base, api_key, secret_key)
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryWithSignature<T> {
+    #[serde(flatten)]
+    pub query: T,
+    pub signature: String,
+}
+
+impl<T> QueryWithSignature<T> {
+    pub fn new(query: T, signature: String) -> Self {
+        Self { query, signature }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SignQueryError {
+    #[error("Serde url encoded error: {0}")]
+    SerdeUrlencodedError(#[from] serde_urlencoded::ser::Error),
+
+    #[error("Secret key invalid length")]
+    SecretKeyInvalidLength(#[from] InvalidLength),
 }

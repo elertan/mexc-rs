@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiV3Result;
+use crate::v3::ApiResult;
 use crate::v3::enums::TradeType;
 
 #[derive(Debug, serde::Serialize)]
@@ -36,14 +36,14 @@ pub struct Trade {
 
 #[async_trait]
 pub trait TradesEndpoint {
-    async fn trades(&self, params: TradesParams<'_>) -> ApiV3Result<TradesOutput>;
+    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput>;
 }
 
 async fn trades_impl(
     endpoint: &MexcApiEndpoint,
     client: &reqwest::Client,
     params: TradesParams<'_>,
-) -> ApiV3Result<TradesOutput> {
+) -> ApiResult<TradesOutput> {
     let endpoint = format!("{}/api/v3/trades", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
     let trades = response.json::<Vec<Trade>>().await?;
@@ -55,14 +55,14 @@ async fn trades_impl(
 
 #[async_trait]
 impl TradesEndpoint for MexcApiClient {
-    async fn trades(&self, params: TradesParams<'_>) -> ApiV3Result<TradesOutput> {
+    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
         trades_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
 impl TradesEndpoint for MexcApiClientWithAuthentication {
-    async fn trades(&self, params: TradesParams<'_>) -> ApiV3Result<TradesOutput> {
+    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
         trades_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }

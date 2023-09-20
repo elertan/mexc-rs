@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, TimeZone, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiV3Error, ApiV3Result};
+use crate::v3::{ApiError, ApiResult};
 use crate::v3::enums::KlineInterval;
 
 #[derive(Debug, serde::Serialize)]
@@ -45,107 +45,107 @@ pub struct Kline {
 
 #[async_trait]
 pub trait KlinesEndpoint {
-    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput>;
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput>;
 }
 
 async fn klines_impl(
     endpoint: &MexcApiEndpoint,
     client: &reqwest::Client,
     params: KlinesParams<'_>,
-) -> ApiV3Result<KlinesOutput> {
+) -> ApiResult<KlinesOutput> {
     let endpoint = format!("{}/api/v3/klines", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
     let value = response.json::<serde_json::Value>().await?;
 
     let serde_json::Value::Array(kline_values) = value else {
-        return Err(ApiV3Error::UnableToParseResponse);
+        return Err(ApiError::UnableToParseResponse);
     };
 
     let klines = kline_values
         .into_iter()
         .map(|kline_value| {
             let serde_json::Value::Array(entries) = kline_value else {
-                return Err(ApiV3Error::UnableToParseResponse);
+                return Err(ApiError::UnableToParseResponse);
             };
 
             let open_time_ts_seconds = entries
                 .get(0)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_i64()
-                .ok_or(ApiV3Error::UnableToParseResponse)?;
+                .ok_or(ApiError::UnableToParseResponse)?;
             let open_time = Utc.timestamp_opt(open_time_ts_seconds, 0).unwrap();
 
             let open = entries
                 .get(1)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for open: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let high = entries
                 .get(2)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for high: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let low = entries
                 .get(3)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for low: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let close = entries
                 .get(4)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for close: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let volume = entries
                 .get(5)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for volume: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let close_time_ts_seconds = entries
                 .get(6)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_i64()
-                .ok_or(ApiV3Error::UnableToParseResponse)?;
+                .ok_or(ApiError::UnableToParseResponse)?;
             let close_time = Utc.timestamp_opt(close_time_ts_seconds, 0).unwrap();
 
             let quote_asset_volume = entries
                 .get(7)
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiV3Error::UnableToParseResponse)?
+                .ok_or(ApiError::UnableToParseResponse)?
                 .parse::<BigDecimal>()
                 .map_err(|err| {
                     tracing::error!("Unable to parse BigDecimal for quote_asset_volume: {}", err);
-                    ApiV3Error::UnableToParseResponse
+                    ApiError::UnableToParseResponse
                 })?;
 
             let kline = Kline {
@@ -161,7 +161,7 @@ async fn klines_impl(
 
             Ok(kline)
         })
-        .collect::<Result<_, ApiV3Error>>()?;
+        .collect::<Result<_, ApiError>>()?;
 
     let output = KlinesOutput { klines };
 
@@ -170,14 +170,14 @@ async fn klines_impl(
 
 #[async_trait]
 impl KlinesEndpoint for MexcApiClient {
-    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput> {
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         klines_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
 impl KlinesEndpoint for MexcApiClientWithAuthentication {
-    async fn klines(&self, params: KlinesParams<'_>) -> ApiV3Result<KlinesOutput> {
+    async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         klines_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }

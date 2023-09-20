@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiV3Result;
+use crate::v3::ApiResult;
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,14 +29,14 @@ pub struct DepthOutput {
 #[async_trait]
 pub trait DepthEndpoint {
     /// Order book
-    async fn depth(&self, params: DepthParams<'_>) -> ApiV3Result<DepthOutput>;
+    async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput>;
 }
 
 async fn depth_impl(
     endpoint: &MexcApiEndpoint,
     client: &reqwest::Client,
     params: DepthParams<'_>,
-) -> ApiV3Result<DepthOutput> {
+) -> ApiResult<DepthOutput> {
     let endpoint = format!("{}/api/v3/depth", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
     let output = response.json::<DepthOutput>().await?;
@@ -46,14 +46,14 @@ async fn depth_impl(
 
 #[async_trait]
 impl DepthEndpoint for MexcApiClient {
-    async fn depth(&self, params: DepthParams<'_>) -> ApiV3Result<DepthOutput> {
+    async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
         depth_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
 impl DepthEndpoint for MexcApiClientWithAuthentication {
-    async fn depth(&self, params: DepthParams<'_>) -> ApiV3Result<DepthOutput> {
+    async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
         depth_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }

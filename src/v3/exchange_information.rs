@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiV3Result;
+use crate::v3::ApiResult;
 use crate::v3::enums::OrderType;
 
 #[derive(Debug)]
@@ -76,14 +76,14 @@ impl<'a> From<ExchangeInformationParams<'a>> for ExchangeInformationEndpointQuer
 
 #[async_trait]
 pub trait ExchangeInformationEndpoint {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiV3Result<ExchangeInformationOutput>;
+    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput>;
 }
 
 async fn exchange_information_impl(
     endpoint: &MexcApiEndpoint,
     client: &reqwest::Client,
     params: ExchangeInformationParams<'_>,
-) -> ApiV3Result<ExchangeInformationOutput> {
+) -> ApiResult<ExchangeInformationOutput> {
     let endpoint = format!("{}/api/v3/exchangeInfo", endpoint.as_ref());
     let query_params = ExchangeInformationEndpointQueryParams::from(params);
     let response = client.get(&endpoint).query(&query_params).send().await?;
@@ -94,14 +94,14 @@ async fn exchange_information_impl(
 
 #[async_trait]
 impl ExchangeInformationEndpoint for MexcApiClient {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiV3Result<ExchangeInformationOutput> {
+    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
         exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
 impl ExchangeInformationEndpoint for MexcApiClientWithAuthentication {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiV3Result<ExchangeInformationOutput> {
+    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
         exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }

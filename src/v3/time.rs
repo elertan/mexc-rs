@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiV3Result;
+use crate::v3::ApiResult;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,13 +12,13 @@ pub struct TimeOutput {
 
 #[async_trait]
 pub trait TimeEndpoint {
-    async fn time(&self) -> ApiV3Result<TimeOutput>;
+    async fn time(&self) -> ApiResult<TimeOutput>;
 }
 
 async fn time_impl(
     endpoint: &MexcApiEndpoint,
     client: &reqwest::Client,
-) -> ApiV3Result<TimeOutput> {
+) -> ApiResult<TimeOutput> {
     let endpoint = format!("{}/api/v3/time", endpoint.as_ref());
     let response = client.get(&endpoint).send().await?;
     let output = response.json::<TimeOutput>().await?;
@@ -28,14 +28,14 @@ async fn time_impl(
 
 #[async_trait]
 impl TimeEndpoint for MexcApiClient {
-    async fn time(&self) -> ApiV3Result<TimeOutput> {
+    async fn time(&self) -> ApiResult<TimeOutput> {
         time_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
 
 #[async_trait]
 impl TimeEndpoint for MexcApiClientWithAuthentication {
-    async fn time(&self) -> ApiV3Result<TimeOutput> {
+    async fn time(&self) -> ApiResult<TimeOutput> {
         time_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
