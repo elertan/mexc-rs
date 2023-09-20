@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use async_trait::async_trait;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
-use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient};
+use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMexcWsMessage};
 
 #[derive(Debug)]
 pub struct SubscribeParams {
@@ -47,30 +48,51 @@ pub trait Subscribe {
 #[async_trait]
 impl Subscribe for MexcWsClient {
     async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
-        let payload_params = params.subscription_requests
+        let subscription_params = params.subscription_requests
             .iter()
             .map(|sr| sr.to_subscription_param())
             .collect::<Vec<String>>();
         let payload = ClientMessagePayload {
             method: "SUBSCRIPTION",
-            params: payload_params,
+            params: subscription_params.clone(),
         };
         let payload_str = serde_json::to_string(&payload)?;
         let message = Message::Text(payload_str);
 
+        tracing::debug!("Acquiring websocket...");
         let mut awo = self.acquire_websocket().await?;
         let ws = awo.websocket_sink();
 
+        tracing::debug!("Sending message: {:?}", &message);
         ws.send(message).await?;
-        let mut i = 0;
+
+        tracing::debug!("Waiting for subscription confirmation response...");
         let mut raw_stream = self.stream_raw();
         while let Some(raw_msg) = raw_stream.next().await {
-            tracing::info!("Raw message: {:?}", raw_msg);
-            i += 1;
-            if i > 5 {
-                todo!();
+            match raw_msg.as_ref() {
+                RawMexcWsMessage::IdCodeMsg { msg, .. } => {
+                    if msg.is_empty() {
+                        continue;
+                    }
+
+                    let mut map = subscription_params.iter().map(|param| (param.as_str(), false)).collect::<HashMap<&str, bool>>();
+                    let parts = msg.split(',');
+                    for part in parts {
+                        let has_part = subscription_params.iter().any(|param| param == part);
+                        if has_part {
+                            map.insert(part, true);
+                        }
+                    }
+                    let has_all = map.values().all(|v| *v);
+                    if has_all {
+                        break;
+                    }
+                }
             }
         }
+        tracing::debug!("Subscription confirmed");
+        // "spot@public.deals.v3.api@KASUSDT,spot@public.deals.v3.api@BTCUSDT"
+        // "spot@public.deals.v3.api@KASUSDT,spot@public.deals.v3.api@BTCUSDT"
 
         Ok(SubscribeOutput {})
     }

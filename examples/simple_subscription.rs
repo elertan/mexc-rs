@@ -12,11 +12,14 @@ async fn main() {
 
     let ws_client = MexcWsClient::default();
     let subscribe_params = SubscribeParams {
-        subscription_requests: vec![SubscriptionRequest::SpotDeals(
-            SpotDealsSubscriptionRequest {
+        subscription_requests: vec![
+            SubscriptionRequest::SpotDeals(SpotDealsSubscriptionRequest {
+                symbol: "BTCUSDT".to_string(),
+            }),
+            SubscriptionRequest::SpotDeals(SpotDealsSubscriptionRequest {
                 symbol: "KASUSDT".to_string(),
-            },
-        )],
+            }),
+        ],
     };
     let subscribe_output = ws_client
         .subscribe(subscribe_params)
