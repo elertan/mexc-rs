@@ -8,6 +8,7 @@ use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMe
 pub struct SubscribeParams {
     pub subscription_requests: Vec<SubscriptionRequest>,
     /// Wait for subscription confirmation response
+    ///
     /// If `None`, defaults to `true`
     pub wait_for_confirmation: Option<bool>,
 }

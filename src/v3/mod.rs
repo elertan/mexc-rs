@@ -14,6 +14,7 @@ pub mod order;
 pub mod get_order;
 pub mod cancel_order;
 pub mod cancel_all_open_orders_on_a_symbol;
+pub mod account_information;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
