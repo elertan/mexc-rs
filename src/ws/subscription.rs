@@ -7,6 +7,9 @@ use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMe
 #[derive(Debug)]
 pub struct SubscribeParams {
     pub subscription_requests: Vec<SubscriptionRequest>,
+    /// Wait for subscription confirmation response
+    /// If `None`, defaults to `true`
+    pub wait_for_confirmation: Option<bool>,
 }
 
 #[derive(Debug)]
@@ -66,33 +69,34 @@ impl Subscribe for MexcWsClient {
         tracing::debug!("Sending message: {:?}", &message);
         ws.send(message).await?;
 
-        tracing::debug!("Waiting for subscription confirmation response...");
-        let mut raw_stream = self.stream_raw();
-        while let Some(raw_msg) = raw_stream.next().await {
-            match raw_msg.as_ref() {
-                RawMexcWsMessage::IdCodeMsg { msg, .. } => {
-                    if msg.is_empty() {
-                        continue;
-                    }
+        if params.wait_for_confirmation.unwrap_or(true) {
+            tracing::debug!("Waiting for subscription confirmation response...");
+            let mut raw_stream = self.stream_raw();
+            while let Some(raw_msg) = raw_stream.next().await {
+                match raw_msg.as_ref() {
+                    RawMexcWsMessage::IdCodeMsg { msg, .. } => {
+                        if msg.is_empty() {
+                            continue;
+                        }
 
-                    let mut map = subscription_params.iter().map(|param| (param.as_str(), false)).collect::<HashMap<&str, bool>>();
-                    let parts = msg.split(',');
-                    for part in parts {
-                        let has_part = subscription_params.iter().any(|param| param == part);
-                        if has_part {
-                            map.insert(part, true);
+                        let mut map = subscription_params.iter().map(|param| (param.as_str(), false)).collect::<HashMap<&str, bool>>();
+                        let parts = msg.split(',');
+                        for part in parts {
+                            let has_part = subscription_params.iter().any(|param| param == part);
+                            if has_part {
+                                map.insert(part, true);
+                            }
+                        }
+                        let has_all = map.values().all(|v| *v);
+                        if has_all {
+                            break;
                         }
                     }
-                    let has_all = map.values().all(|v| *v);
-                    if has_all {
-                        break;
-                    }
+                    _ => {}
                 }
             }
+            tracing::debug!("Subscription confirmed");
         }
-        tracing::debug!("Subscription confirmed");
-        // "spot@public.deals.v3.api@KASUSDT,spot@public.deals.v3.api@BTCUSDT"
-        // "spot@public.deals.v3.api@KASUSDT,spot@public.deals.v3.api@BTCUSDT"
 
         Ok(SubscribeOutput {})
     }

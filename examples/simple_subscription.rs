@@ -2,12 +2,12 @@ use futures::StreamExt;
 use mexc_rs::ws::subscription::{
     SpotDealsSubscriptionRequest, Subscribe, SubscribeParams, SubscriptionRequest,
 };
-use mexc_rs::ws::MexcWsClient;
+use mexc_rs::ws::{MexcWsClient, MexcWsMessage};
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "mexc_rs=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=trace,simple_subscription=trace");
     tracing_subscriber::fmt::init();
 
     let ws_client = MexcWsClient::default();
@@ -20,16 +20,27 @@ async fn main() {
                 symbol: "KASUSDT".to_string(),
             }),
         ],
+        wait_for_confirmation: None,
     };
-    let subscribe_output = ws_client
+    ws_client
         .subscribe(subscribe_params)
         .await
         .expect("Failed to subscribe");
-    tracing::info!("{:?}", subscribe_output);
 
-    let message_result = ws_client.stream().next().await;
-    tracing::info!("{:?}", message_result);
-
-    assert!(message_result.is_some());
-    todo!()
+    let mut stream = ws_client.stream();
+    while let Some(message) = stream.next().await {
+        match message.as_ref() {
+            MexcWsMessage::SpotDeals(spot_deals_message) => {
+                for deal in &spot_deals_message.deals {
+                    tracing::info!(
+                        "Spot deal for '{}' at price {} with quantity {} at {}",
+                        deal.symbol,
+                        deal.price,
+                        deal.quantity,
+                        deal.timestamp.format("%a %b %e %T %Y")
+                    )
+                }
+            }
+        }
+    }
 }

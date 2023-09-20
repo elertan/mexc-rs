@@ -1,11 +1,13 @@
 use std::sync::Arc;
+use bigdecimal::BigDecimal;
+use chrono::{DateTime, Utc};
 use futures::{StreamExt};
 use futures::stream::{BoxStream, SplitSink};
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::Message;
-use crate::ws::spot_deals::SpotDealsMessage;
+use crate::ws::spot_deals::{channel_message_to_spot_deals_message, SpotDealsMessage};
 
 pub mod subscription;
 pub mod spot_deals;
@@ -25,7 +27,7 @@ impl AsRef<str> for MexcWsEndpoint {
 }
 
 struct MexcWsClientInner {
-    websocket_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>
+    websocket_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
 }
 
 pub struct MexcWsClient {
@@ -84,9 +86,22 @@ impl MexcWsClient {
                             break;
                         }
                     };
-                    // tracing::debug!("Received raw mexc ws message: {:?}", &raw_mexc_ws_message);
-
-                    let mexc_message_opt = match &raw_mexc_ws_message {
+                    let mexc_message_opt = match raw_mexc_ws_message.as_ref() {
+                        RawMexcWsMessage::ChannelMessage(channel_message) => {
+                            let channel = &channel_message.channel;
+                            if channel.starts_with("spot@public.deals.v3.api@") {
+                                let result = channel_message_to_spot_deals_message(channel_message);
+                                match result {
+                                    Ok(spot_deals_message) => Some(Arc::new(MexcWsMessage::SpotDeals(spot_deals_message))),
+                                    Err(err) => {
+                                        tracing::error!("Failed to convert channel message to spot deals message: {:?}", err);
+                                        break;
+                                    }
+                                }
+                            } else {
+                                None
+                            }
+                        }
                         _ => {
                             tracing::debug!("Received raw mexc ws message that won't be used for direct consumption by api consumer");
                             None
@@ -168,7 +183,7 @@ pub struct ClientMessagePayload<'a, T> {
     pub params: T,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum MexcWsMessage {
     SpotDeals(SpotDealsMessage),
 }
@@ -176,5 +191,39 @@ pub enum MexcWsMessage {
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 enum RawMexcWsMessage {
-    IdCodeMsg { id: i64, code: i32, msg: String }
+    IdCodeMsg { id: i64, code: i32, msg: String },
+    ChannelMessage(ChannelMessage),
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub(crate) struct ChannelMessage {
+    #[serde(rename = "c")]
+    pub channel: String,
+    #[serde(rename = "s")]
+    pub symbol: String,
+    #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
+    pub timestamp: DateTime<Utc>,
+    #[serde(rename = "d")]
+    pub data: ChannelMessageData,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ChannelMessageData {
+    pub deals: Option<Vec<ChannelMessageDeal>>,
+    #[serde(rename = "e")]
+    pub event_type: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ChannelMessageDeal {
+    #[serde(rename = "p")]
+    pub price: BigDecimal,
+    #[serde(rename = "v")]
+    pub quantity: BigDecimal,
+    #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
+    pub timestamp: DateTime<Utc>,
+    #[serde(rename = "S")]
+    pub trade_type: i32,
 }
