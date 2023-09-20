@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
 use crate::v3::{ApiResponse, ApiResult};
 
