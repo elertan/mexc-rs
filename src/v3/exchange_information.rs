@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::v3::{ApiResponse, ApiResult};
 use crate::v3::enums::OrderType;
 
 #[derive(Debug)]
@@ -87,7 +87,8 @@ async fn exchange_information_impl(
     let endpoint = format!("{}/api/v3/exchangeInfo", endpoint.as_ref());
     let query_params = ExchangeInformationEndpointQueryParams::from(params);
     let response = client.get(&endpoint).query(&query_params).send().await?;
-    let output = response.json::<ExchangeInformationOutput>().await?;
+    let api_response = response.json::<ApiResponse<ExchangeInformationOutput>>().await?;
+    let output = api_response.into_api_result()?;
 
     Ok(output)
 }

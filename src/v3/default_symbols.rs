@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,7 +22,8 @@ async fn default_symbols_impl(
 ) -> ApiResult<DefaultsSymbolsOutput> {
     let endpoint = format!("{}/api/v3/defaultSymbols", endpoint.as_ref());
     let response = client.get(&endpoint).send().await?;
-    let output = response.json::<DefaultsSymbolsOutput>().await?;
+    let response = response.json::<ApiResponse<DefaultsSymbolsOutput>>().await?;
+    let output = response.into_api_result()?;
 
     Ok(output)
 }

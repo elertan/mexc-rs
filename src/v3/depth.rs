@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +39,8 @@ async fn depth_impl(
 ) -> ApiResult<DepthOutput> {
     let endpoint = format!("{}/api/v3/depth", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
-    let output = response.json::<DepthOutput>().await?;
+    let api_response = response.json::<ApiResponse<DepthOutput>>().await?;
+    let output = api_response.into_api_result()?;
 
     Ok(output)
 }

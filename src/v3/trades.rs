@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::v3::{ApiResponse, ApiResult};
 use crate::v3::enums::TradeType;
 
 #[derive(Debug, serde::Serialize)]
@@ -46,7 +46,8 @@ async fn trades_impl(
 ) -> ApiResult<TradesOutput> {
     let endpoint = format!("{}/api/v3/trades", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
-    let trades = response.json::<Vec<Trade>>().await?;
+    let api_response = response.json::<ApiResponse<Vec<Trade>>>().await?;
+    let trades = api_response.into_api_result()?;
 
     Ok(TradesOutput {
         trades

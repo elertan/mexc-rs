@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -21,7 +21,8 @@ async fn time_impl(
 ) -> ApiResult<TimeOutput> {
     let endpoint = format!("{}/api/v3/time", endpoint.as_ref());
     let response = client.get(&endpoint).send().await?;
-    let output = response.json::<TimeOutput>().await?;
+    let api_response = response.json::<ApiResponse<TimeOutput>>().await?;
+    let output = api_response.into_api_result()?;
 
     Ok(output)
 }

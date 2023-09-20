@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, TimeZone, Utc};
 use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiError, ApiResult};
+use crate::v3::{ApiError, ApiResult, ErrorResponse};
 use crate::v3::enums::KlineInterval;
 
 #[derive(Debug, serde::Serialize)]
@@ -55,7 +55,12 @@ async fn klines_impl(
 ) -> ApiResult<KlinesOutput> {
     let endpoint = format!("{}/api/v3/klines", endpoint.as_ref());
     let response = client.get(&endpoint).query(&params).send().await?;
-    let value = response.json::<serde_json::Value>().await?;
+    let json = response.text().await?;
+
+    if let Ok(err_response) = serde_json::from_str::<ErrorResponse>(&json) {
+        return Err(ApiError::ErrorResponse(err_response));
+    }
+    let value = serde_json::from_str::<serde_json::Value>(&json)?;
 
     let serde_json::Value::Array(kline_values) = value else {
         return Err(ApiError::UnableToParseResponse);
