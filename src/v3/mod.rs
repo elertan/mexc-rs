@@ -11,6 +11,7 @@ pub mod default_symbols;
 pub mod exchange_information;
 pub mod trades;
 pub mod order;
+pub mod get_order;
 pub mod cancel_order;
 pub mod cancel_all_open_orders_on_a_symbol;
 
@@ -201,6 +202,7 @@ pub enum ErrorCode {
     UserNameAlreadyExists = 730101,
     SubAccountDoesNotExist = 140001,
     SubAccountIsForbidden = 140002,
+    OrderDoesNotExist = -2013,
 }
 
 impl Display for ErrorCode {

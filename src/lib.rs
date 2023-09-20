@@ -52,7 +52,7 @@ impl Default for MexcApiClient {
 pub struct MexcApiClientWithAuthentication {
     endpoint: MexcApiEndpoint,
     reqwest_client: reqwest::Client,
-    api_key: String,
+    _api_key: String,
     secret_key: String,
 }
 
@@ -70,7 +70,7 @@ impl MexcApiClientWithAuthentication {
         Self {
             endpoint,
             reqwest_client,
-            api_key,
+            _api_key: api_key,
             secret_key,
         }
     }
