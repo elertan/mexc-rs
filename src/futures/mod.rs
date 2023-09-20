@@ -1,4 +1,6 @@
 pub mod error;
+pub mod result;
+pub mod response;
 pub mod auth;
 pub mod v1;
 
