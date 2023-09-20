@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, TimeZone, Utc};
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiError, ApiResult, ErrorResponse};
-use crate::v3::enums::KlineInterval;
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiError, ApiResult, ErrorResponse};
+use crate::spot::v3::enums::KlineInterval;
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,7 +49,7 @@ pub trait KlinesEndpoint {
 }
 
 async fn klines_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
     params: KlinesParams<'_>,
 ) -> ApiResult<KlinesOutput> {
@@ -174,14 +174,14 @@ async fn klines_impl(
 }
 
 #[async_trait]
-impl KlinesEndpoint for MexcApiClient {
+impl KlinesEndpoint for MexcSpotApiClient {
     async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         klines_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
-impl KlinesEndpoint for MexcApiClientWithAuthentication {
+impl KlinesEndpoint for MexcSpotApiClientWithAuthentication {
     async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         klines_impl(&self.endpoint, &self.reqwest_client, params).await
     }
@@ -193,7 +193,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_klines() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let params = KlinesParams {
             symbol: "BTCUSDT",
             interval: KlineInterval::OneMinute,

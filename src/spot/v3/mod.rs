@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use reqwest::StatusCode;
-use crate::SignQueryError;
+use crate::spot::SignQueryError;
 
 pub mod depth;
 pub mod enums;

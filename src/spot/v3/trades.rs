@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiResponse, ApiResult};
-use crate::v3::enums::TradeType;
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::v3::enums::TradeType;
 
 #[derive(Debug, serde::Serialize)]
 pub struct TradesParams<'a> {
@@ -40,7 +40,7 @@ pub trait TradesEndpoint {
 }
 
 async fn trades_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
     params: TradesParams<'_>,
 ) -> ApiResult<TradesOutput> {
@@ -55,14 +55,14 @@ async fn trades_impl(
 }
 
 #[async_trait]
-impl TradesEndpoint for MexcApiClient {
+impl TradesEndpoint for MexcSpotApiClient {
     async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
         trades_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
-impl TradesEndpoint for MexcApiClientWithAuthentication {
+impl TradesEndpoint for MexcSpotApiClientWithAuthentication {
     async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
         trades_impl(&self.endpoint, &self.reqwest_client, params).await
     }
@@ -74,7 +74,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_trades() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let params = TradesParams {
             symbol: "KASUSDT",
             limit: Some(1000),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
-use crate::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMexcWsMessage};
+use crate::spot::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMexcWsMessage};
 
 #[derive(Debug)]
 pub struct SubscribeParams {

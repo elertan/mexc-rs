@@ -1,6 +1,6 @@
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::ws::ChannelMessage;
+use crate::spot::ws::ChannelMessage;
 
 #[derive(Debug)]
 pub struct SpotDealsMessage {

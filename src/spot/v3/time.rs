@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiResponse, ApiResult};
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,7 +16,7 @@ pub trait TimeEndpoint {
 }
 
 async fn time_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
 ) -> ApiResult<TimeOutput> {
     let endpoint = format!("{}/api/v3/time", endpoint.as_ref());
@@ -28,14 +28,14 @@ async fn time_impl(
 }
 
 #[async_trait]
-impl TimeEndpoint for MexcApiClient {
+impl TimeEndpoint for MexcSpotApiClient {
     async fn time(&self) -> ApiResult<TimeOutput> {
         time_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
 
 #[async_trait]
-impl TimeEndpoint for MexcApiClientWithAuthentication {
+impl TimeEndpoint for MexcSpotApiClientWithAuthentication {
     async fn time(&self) -> ApiResult<TimeOutput> {
         time_impl(&self.endpoint, &self.reqwest_client).await
     }
@@ -47,7 +47,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_time() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let result = client.time().await;
         assert!(result.is_ok());
     }

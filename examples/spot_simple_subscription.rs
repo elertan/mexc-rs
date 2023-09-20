@@ -1,13 +1,13 @@
 use futures::StreamExt;
-use mexc_rs::ws::subscription::{
+use mexc_rs::spot::ws::subscription::{
     SpotDealsSubscriptionRequest, Subscribe, SubscribeParams, SubscriptionRequest,
 };
-use mexc_rs::ws::{MexcWsClient, MexcWsMessage};
+use mexc_rs::spot::ws::{MexcWsClient, MexcWsMessage};
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "mexc_rs=trace,simple_subscription=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=trace,spot_simple_subscription=trace");
     tracing_subscriber::fmt::init();
 
     let ws_client = MexcWsClient::default();

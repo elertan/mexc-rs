@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::MexcApiClientWithAuthentication;
-use crate::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,7 +43,7 @@ pub struct AccountInformationQuery {
 }
 
 #[async_trait]
-impl AccountInformationEndpoint for MexcApiClientWithAuthentication {
+impl AccountInformationEndpoint for MexcSpotApiClientWithAuthentication {
     async fn account_information(&self) -> ApiResult<AccountInformationOutput> {
         let endpoint = format!("{}/api/v3/account", self.endpoint.as_ref());
         let query = self.sign_query(AccountInformationQuery {
@@ -64,7 +64,7 @@ mod tests {
 
     #[tokio::test]
     async fn test() {
-        let client = MexcApiClientWithAuthentication::new_for_test();
+        let client = MexcSpotApiClientWithAuthentication::new_for_test();
         let result = client.account_information().await;
         assert!(result.is_ok());
     }

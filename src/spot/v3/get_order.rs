@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClientWithAuthentication};
-use crate::v3::{ApiResponse, ApiResult};
-use crate::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 
 #[derive(Debug)]
 pub struct GetOrderParams<'a> {
@@ -76,7 +76,7 @@ pub trait GetOrderEndpoint {
 }
 
 #[async_trait]
-impl GetOrderEndpoint for MexcApiClientWithAuthentication {
+impl GetOrderEndpoint for MexcSpotApiClientWithAuthentication {
     async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<GetOrderOutput> {
         let endpoint = format!("{}/api/v3/order", self.endpoint.as_ref());
         let query = GetOrderQuery::from(params);
@@ -96,7 +96,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_order() {
-        let client = MexcApiClientWithAuthentication::new_for_test();
+        let client = MexcSpotApiClientWithAuthentication::new_for_test();
         let params = GetOrderParams {
             symbol: "KASUSDT",
             order_id: None,

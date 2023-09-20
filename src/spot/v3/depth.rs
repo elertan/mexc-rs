@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiResponse, ApiResult};
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,7 +33,7 @@ pub trait DepthEndpoint {
 }
 
 async fn depth_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
     params: DepthParams<'_>,
 ) -> ApiResult<DepthOutput> {
@@ -46,14 +46,14 @@ async fn depth_impl(
 }
 
 #[async_trait]
-impl DepthEndpoint for MexcApiClient {
+impl DepthEndpoint for MexcSpotApiClient {
     async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
         depth_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
-impl DepthEndpoint for MexcApiClientWithAuthentication {
+impl DepthEndpoint for MexcSpotApiClientWithAuthentication {
     async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
         depth_impl(&self.endpoint, &self.reqwest_client, params).await
     }
@@ -65,7 +65,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_depth() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let depth_params = DepthParams {
             symbol: "BTCUSDT",
             limit: None,

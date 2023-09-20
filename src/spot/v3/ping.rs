@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::ApiResult;
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::ApiResult;
 
 #[async_trait]
 pub trait PingEndpoint {
@@ -8,7 +8,7 @@ pub trait PingEndpoint {
     async fn ping(&self) -> ApiResult<()>;
 }
 
-async fn ping_impl(endpoint: &MexcApiEndpoint, client: &reqwest::Client) -> ApiResult<()> {
+async fn ping_impl(endpoint: &MexcSpotApiEndpoint, client: &reqwest::Client) -> ApiResult<()> {
     let endpoint = format!("{}/api/v3/ping", endpoint.as_ref());
     client.get(&endpoint).send().await?;
 
@@ -16,14 +16,14 @@ async fn ping_impl(endpoint: &MexcApiEndpoint, client: &reqwest::Client) -> ApiR
 }
 
 #[async_trait]
-impl PingEndpoint for MexcApiClient {
+impl PingEndpoint for MexcSpotApiClient {
     async fn ping(&self) -> ApiResult<()> {
         ping_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
 
 #[async_trait]
-impl PingEndpoint for MexcApiClientWithAuthentication {
+impl PingEndpoint for MexcSpotApiClientWithAuthentication {
     async fn ping(&self) -> ApiResult<()> {
         ping_impl(&self.endpoint, &self.reqwest_client).await
     }
@@ -35,7 +35,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ping() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let result = client.ping().await;
         assert!(result.is_ok());
     }

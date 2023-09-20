@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClientWithAuthentication};
-use crate::v3::{ApiResponse, ApiResult};
-use crate::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 
 #[derive(Debug)]
 pub struct CancelAllOpenOrdersOnASymbolParams<'a> {
@@ -63,7 +63,7 @@ pub trait CancelAllOpenOrdersOnASymbolEndpoint {
 }
 
 #[async_trait]
-impl CancelAllOpenOrdersOnASymbolEndpoint for MexcApiClientWithAuthentication {
+impl CancelAllOpenOrdersOnASymbolEndpoint for MexcSpotApiClientWithAuthentication {
     async fn cancel_all_open_orders_on_a_symbol(&self, params: CancelAllOpenOrdersOnASymbolParams<'_>) -> ApiResult<CancelAllOpenOrdersOnASymbolOutput> {
         let endpoint = format!("{}/api/v3/openOrders", self.endpoint.as_ref());
         let query = CancelAllOpenOrdersOnASymbolQuery::from(params);
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn cancel_order() {
-        let client = MexcApiClientWithAuthentication::new_for_test();
+        let client = MexcSpotApiClientWithAuthentication::new_for_test();
         let params = CancelAllOpenOrdersOnASymbolParams {
             symbol: "KASUSDT",
         };

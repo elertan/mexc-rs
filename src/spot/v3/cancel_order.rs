@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClientWithAuthentication};
-use crate::v3::{ApiResponse, ApiResult};
-use crate::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 
 #[derive(Debug)]
 pub struct CancelOrderParams<'a> {
@@ -70,7 +70,7 @@ pub trait CancelOrderEndpoint {
 }
 
 #[async_trait]
-impl CancelOrderEndpoint for MexcApiClientWithAuthentication {
+impl CancelOrderEndpoint for MexcSpotApiClientWithAuthentication {
     async fn cancel_order(&self, params: CancelOrderParams<'_>) -> ApiResult<CancelOrderOutput> {
         let endpoint = format!("{}/api/v3/order", self.endpoint.as_ref());
         let query = CancelOrderQuery::from(params);
@@ -90,7 +90,7 @@ mod tests {
 
     #[tokio::test]
     async fn cancel_order() {
-        let client = MexcApiClientWithAuthentication::new_for_test();
+        let client = MexcSpotApiClientWithAuthentication::new_for_test();
         let params = CancelOrderParams {
             symbol: "KASUSDT",
             order_id: None,

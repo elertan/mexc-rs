@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiResponse, ApiResult};
 
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,7 +17,7 @@ pub trait DefaultSymbolsEndpoint {
 }
 
 async fn default_symbols_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
 ) -> ApiResult<DefaultsSymbolsOutput> {
     let endpoint = format!("{}/api/v3/defaultSymbols", endpoint.as_ref());
@@ -29,14 +29,14 @@ async fn default_symbols_impl(
 }
 
 #[async_trait]
-impl DefaultSymbolsEndpoint for MexcApiClient {
+impl DefaultSymbolsEndpoint for MexcSpotApiClient {
     async fn time(&self) -> ApiResult<DefaultsSymbolsOutput> {
         default_symbols_impl(&self.endpoint, &self.reqwest_client).await
     }
 }
 
 #[async_trait]
-impl DefaultSymbolsEndpoint for MexcApiClientWithAuthentication {
+impl DefaultSymbolsEndpoint for MexcSpotApiClientWithAuthentication {
     async fn time(&self) -> ApiResult<DefaultsSymbolsOutput> {
         default_symbols_impl(&self.endpoint, &self.reqwest_client).await
     }
@@ -48,7 +48,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_default_symbols() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let result = client.time().await;
         assert!(result.is_ok());
     }

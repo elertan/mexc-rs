@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use crate::{MexcApiClient, MexcApiClientWithAuthentication, MexcApiEndpoint};
-use crate::v3::{ApiResponse, ApiResult};
-use crate::v3::enums::OrderType;
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::v3::enums::OrderType;
 
 #[derive(Debug)]
 pub enum ExchangeInformationParams<'a> {
@@ -80,7 +80,7 @@ pub trait ExchangeInformationEndpoint {
 }
 
 async fn exchange_information_impl(
-    endpoint: &MexcApiEndpoint,
+    endpoint: &MexcSpotApiEndpoint,
     client: &reqwest::Client,
     params: ExchangeInformationParams<'_>,
 ) -> ApiResult<ExchangeInformationOutput> {
@@ -94,14 +94,14 @@ async fn exchange_information_impl(
 }
 
 #[async_trait]
-impl ExchangeInformationEndpoint for MexcApiClient {
+impl ExchangeInformationEndpoint for MexcSpotApiClient {
     async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
         exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
     }
 }
 
 #[async_trait]
-impl ExchangeInformationEndpoint for MexcApiClientWithAuthentication {
+impl ExchangeInformationEndpoint for MexcSpotApiClientWithAuthentication {
     async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
         exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
     }
@@ -113,7 +113,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_params() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let params = ExchangeInformationParams::None;
         let result = client.exchange_information(params).await;
         assert!(result.is_ok());
@@ -121,7 +121,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_single_symbol() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let params = ExchangeInformationParams::Symbol("BTCUSDT");
         let result = client.exchange_information(params).await;
         assert!(result.is_ok());
@@ -133,7 +133,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_multiple_symbols() {
-        let client = MexcApiClient::default();
+        let client = MexcSpotApiClient::default();
         let params = ExchangeInformationParams::Symbols(&["BTCUSDT", "ETHUSDT"]);
         let result = client.exchange_information(params).await;
         assert!(result.is_ok());

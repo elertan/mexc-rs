@@ -1,21 +1,22 @@
 use bigdecimal::BigDecimal;
 use dotenv::dotenv;
-use mexc_rs::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
-use mexc_rs::v3::enums::{OrderSide, OrderType};
-use mexc_rs::v3::order::{OrderEndpoint, OrderParams};
-use mexc_rs::{MexcApiClientWithAuthentication, MexcApiEndpoint};
+use mexc_rs::spot::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
+use mexc_rs::spot::v3::enums::{OrderSide, OrderType};
+use mexc_rs::spot::v3::order::{OrderEndpoint, OrderParams};
+use mexc_rs::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    std::env::set_var("RUST_LOG", "mexc_rs=trace,create_order=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=trace,spot_create_order=trace");
     tracing_subscriber::fmt::init();
 
     dotenv().ok();
     let api_key = std::env::var("MEXC_API_KEY").expect("MEXC_API_KEY not set");
     let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
 
-    let client = MexcApiClientWithAuthentication::new(MexcApiEndpoint::Base, api_key, secret_key);
+    let client =
+        MexcSpotApiClientWithAuthentication::new(MexcSpotApiEndpoint::Base, api_key, secret_key);
 
     // Order needs to be at least 5 USDT
     // Order low enough to never be filled

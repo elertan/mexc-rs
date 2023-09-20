@@ -7,7 +7,7 @@ use tokio::net::TcpStream;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tokio_tungstenite::tungstenite::Message;
-use crate::ws::spot_deals::{channel_message_to_spot_deals_message, SpotDealsMessage};
+use crate::spot::ws::spot_deals::{channel_message_to_spot_deals_message, SpotDealsMessage};
 
 pub mod subscription;
 pub mod spot_deals;
