@@ -1,13 +1,16 @@
-use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use dotenv::dotenv;
-use mexc_rs::{MexcApiClientWithAuthentication, MexcApiEndpoint};
 use mexc_rs::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
 use mexc_rs::v3::enums::{OrderSide, OrderType};
 use mexc_rs::v3::order::{OrderEndpoint, OrderParams};
+use mexc_rs::{MexcApiClientWithAuthentication, MexcApiEndpoint};
+use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    std::env::set_var("RUST_LOG", "mexc_rs=trace,create_order=trace");
+    tracing_subscriber::fmt::init();
+
     dotenv().ok();
     let api_key = std::env::var("MEXC_API_KEY").expect("MEXC_API_KEY not set");
     let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
@@ -26,9 +29,9 @@ async fn main() -> anyhow::Result<()> {
         new_client_order_id: None,
     };
     let order_output = client.order(order_params).await?;
-    println!("{:?}", &order_output);
+    tracing::info!("{:?}", &order_output);
 
-    println!("Waiting for 3 seconds...");
+    tracing::info!("Waiting for 3 seconds...");
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     let cancel_order_params = CancelOrderParams {
@@ -39,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     };
     client.cancel_order(cancel_order_params).await?;
 
-    println!("Done!");
+    tracing::info!("Done!");
 
     Ok(())
 }
