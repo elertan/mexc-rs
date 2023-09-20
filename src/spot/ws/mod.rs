@@ -12,38 +12,38 @@ use crate::spot::ws::spot_deals::{channel_message_to_spot_deals_message, SpotDea
 pub mod subscription;
 pub mod spot_deals;
 
-pub enum MexcWsEndpoint {
+pub enum MexcSportWsEndpoint {
     Base,
     Custom(String),
 }
 
-impl AsRef<str> for MexcWsEndpoint {
+impl AsRef<str> for MexcSportWsEndpoint {
     fn as_ref(&self) -> &str {
         match self {
-            MexcWsEndpoint::Base => "wss://wbs.mexc.com/ws",
-            MexcWsEndpoint::Custom(endpoint) => endpoint,
+            MexcSportWsEndpoint::Base => "wss://wbs.mexc.com/ws",
+            MexcSportWsEndpoint::Custom(endpoint) => endpoint,
         }
     }
 }
 
-struct MexcWsClientInner {
+struct MexcSpotWsClientInner {
     websocket_sink: Option<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>,
 }
 
-pub struct MexcWsClient {
-    endpoint: MexcWsEndpoint,
-    ws_message_tx: async_broadcast::Sender<Arc<MexcWsMessage>>,
-    ws_message_rx: async_broadcast::Receiver<Arc<MexcWsMessage>>,
-    ws_raw_message_tx: async_broadcast::Sender<Arc<RawMexcWsMessage>>,
-    ws_raw_message_rx: async_broadcast::Receiver<Arc<RawMexcWsMessage>>,
-    inner: Arc<Mutex<MexcWsClientInner>>,
+pub struct MexcSpotWsClient {
+    endpoint: MexcSportWsEndpoint,
+    ws_message_tx: async_broadcast::Sender<Arc<MexcSpotWsMessage>>,
+    ws_message_rx: async_broadcast::Receiver<Arc<MexcSpotWsMessage>>,
+    ws_raw_message_tx: async_broadcast::Sender<Arc<RawMexcSpotWsMessage>>,
+    ws_raw_message_rx: async_broadcast::Receiver<Arc<RawMexcSpotWsMessage>>,
+    inner: Arc<Mutex<MexcSpotWsClientInner>>,
 }
 
-impl MexcWsClient {
-    pub fn new(endpoint: MexcWsEndpoint) -> Self {
+impl MexcSpotWsClient {
+    pub fn new(endpoint: MexcSportWsEndpoint) -> Self {
         let (ws_message_tx, ws_message_rx) = async_broadcast::broadcast(1000000);
         let (ws_raw_message_tx, ws_raw_message_rx) = async_broadcast::broadcast(1000000);
-        let inner = Arc::new(Mutex::new(MexcWsClientInner {
+        let inner = Arc::new(Mutex::new(MexcSpotWsClientInner {
             websocket_sink: None,
         }));
 
@@ -79,7 +79,7 @@ impl MexcWsClient {
                             continue;
                         }
                     };
-                    let raw_mexc_ws_message = match serde_json::from_str::<RawMexcWsMessage>(&text) {
+                    let raw_mexc_ws_message = match serde_json::from_str::<RawMexcSpotWsMessage>(&text) {
                         Ok(raw_mexc_ws_message) => Arc::new(raw_mexc_ws_message),
                         Err(err) => {
                             tracing::error!("Failed to parse mexc ws message: {:?}", err);
@@ -87,12 +87,12 @@ impl MexcWsClient {
                         }
                     };
                     let mexc_message_opt = match raw_mexc_ws_message.as_ref() {
-                        RawMexcWsMessage::ChannelMessage(channel_message) => {
+                        RawMexcSpotWsMessage::ChannelMessage(channel_message) => {
                             let channel = &channel_message.channel;
                             if channel.starts_with("spot@public.deals.v3.api@") {
                                 let result = channel_message_to_spot_deals_message(channel_message);
                                 match result {
-                                    Ok(spot_deals_message) => Some(Arc::new(MexcWsMessage::SpotDeals(spot_deals_message))),
+                                    Ok(spot_deals_message) => Some(Arc::new(MexcSpotWsMessage::SpotDeals(spot_deals_message))),
                                     Err(err) => {
                                         tracing::error!("Failed to convert channel message to spot deals message: {:?}", err);
                                         break;
@@ -132,7 +132,7 @@ impl MexcWsClient {
         Ok(AcquireWebsocketOutput { inner_guard: inner })
     }
 
-    pub fn stream(&self) -> BoxStream<Arc<MexcWsMessage>> {
+    pub fn stream(&self) -> BoxStream<Arc<MexcSpotWsMessage>> {
         let mut mr = self.ws_message_rx.clone();
         let stream = async_stream::stream! {
             while let Ok(message) = mr.recv().await {
@@ -142,7 +142,7 @@ impl MexcWsClient {
         stream.boxed()
     }
 
-    fn stream_raw(&self) -> BoxStream<Arc<RawMexcWsMessage>> {
+    fn stream_raw(&self) -> BoxStream<Arc<RawMexcSpotWsMessage>> {
         let mut mr = self.ws_raw_message_rx.clone();
         let stream = async_stream::stream! {
             while let Ok(message) = mr.recv().await {
@@ -155,7 +155,7 @@ impl MexcWsClient {
 }
 
 pub struct AcquireWebsocketOutput<'a> {
-    inner_guard: MutexGuard<'a, MexcWsClientInner>,
+    inner_guard: MutexGuard<'a, MexcSpotWsClientInner>,
 }
 
 impl<'a> AcquireWebsocketOutput<'a> {
@@ -170,9 +170,9 @@ pub enum AcquireWebsocketError {
     TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
 }
 
-impl Default for MexcWsClient {
+impl Default for MexcSpotWsClient {
     fn default() -> Self {
-        Self::new(MexcWsEndpoint::Base)
+        Self::new(MexcSportWsEndpoint::Base)
     }
 }
 
@@ -184,13 +184,13 @@ pub struct ClientMessagePayload<'a, T> {
 }
 
 #[derive(Debug)]
-pub enum MexcWsMessage {
+pub enum MexcSpotWsMessage {
     SpotDeals(SpotDealsMessage),
 }
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
-enum RawMexcWsMessage {
+enum RawMexcSpotWsMessage {
     IdCodeMsg { id: i64, code: i32, msg: String },
     ChannelMessage(ChannelMessage),
 }

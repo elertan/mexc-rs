@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
-use crate::spot::ws::{AcquireWebsocketError, ClientMessagePayload, MexcWsClient, RawMexcWsMessage};
+use crate::spot::ws::{AcquireWebsocketError, ClientMessagePayload, MexcSpotWsClient, RawMexcSpotWsMessage};
 
 #[derive(Debug)]
 pub struct SubscribeParams {
@@ -50,7 +50,7 @@ pub trait Subscribe {
 }
 
 #[async_trait]
-impl Subscribe for MexcWsClient {
+impl Subscribe for MexcSpotWsClient {
     async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
         let subscription_params = params.subscription_requests
             .iter()
@@ -75,7 +75,7 @@ impl Subscribe for MexcWsClient {
             let mut raw_stream = self.stream_raw();
             while let Some(raw_msg) = raw_stream.next().await {
                 match raw_msg.as_ref() {
-                    RawMexcWsMessage::IdCodeMsg { msg, .. } => {
+                    RawMexcSpotWsMessage::IdCodeMsg { msg, .. } => {
                         if msg.is_empty() {
                             continue;
                         }
