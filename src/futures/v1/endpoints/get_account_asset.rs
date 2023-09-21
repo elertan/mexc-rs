@@ -5,17 +5,17 @@ use crate::futures::result::ApiResult;
 use crate::futures::v1::models::AccountAsset;
 
 #[async_trait]
-pub trait GetAccountAssets {
-    async fn get_account_assets(&self) -> ApiResult<Vec<AccountAsset>>;
+pub trait GetAccountAsset {
+    async fn get_account_asset<'a>(&self, currency: &'a str) -> ApiResult<AccountAsset>;
 }
 
 #[async_trait]
-impl GetAccountAssets for MexcFuturesApiClientWithAuthentication {
-    async fn get_account_assets(&self) -> ApiResult<Vec<AccountAsset>> {
-        let url = format!("{}/api/v1/private/account/assets", self.endpoint.as_ref());
+impl GetAccountAsset for MexcFuturesApiClientWithAuthentication {
+    async fn get_account_asset<'a>(&self, currency: &'a str) -> ApiResult<AccountAsset> {
+        let url = format!("{}/api/v1/private/account/asset/{}", self.endpoint.as_ref(), currency);
         let auth_header_map = self.get_auth_header_map(&())?;
         let response = self.reqwest_client.get(&url).headers(auth_header_map).send().await?;
-        let api_response = response.json::<ApiResponse<Vec<AccountAsset>>>().await?;
+        let api_response = response.json::<ApiResponse<AccountAsset>>().await?;
         api_response.into_api_result()
     }
 }
