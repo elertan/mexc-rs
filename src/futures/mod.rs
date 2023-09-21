@@ -1,3 +1,6 @@
+use chrono::Utc;
+use crate::futures::auth::SignRequestParams;
+
 pub mod error;
 pub mod result;
 pub mod response;
@@ -55,27 +58,47 @@ impl Default for MexcFuturesApiClient {
 pub struct MexcFuturesApiClientWithAuthentication {
     endpoint: MexcFuturesApiEndpoint,
     reqwest_client: reqwest::Client,
-    _api_key: String,
+    api_key: String,
     secret_key: String,
 }
 
 impl MexcFuturesApiClientWithAuthentication {
     pub fn new(endpoint: MexcFuturesApiEndpoint, api_key: String, secret_key: String) -> Self {
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-            "ApiKey",
-            api_key.parse().expect("Failed to parse api key"),
-        );
         let reqwest_client = reqwest::Client::builder()
-            .default_headers(headers)
             .build()
             .expect("Failed to build reqwest client");
         Self {
             endpoint,
             reqwest_client,
-            _api_key: api_key,
+            api_key,
             secret_key,
         }
+    }
+
+    fn get_auth_header_map<T>(&self, params: &T) -> Result<reqwest::header::HeaderMap, GetAuthHeaderMapError>
+        where
+            T: serde::Serialize,
+    {
+        let mut header_map = reqwest::header::HeaderMap::new();
+        header_map.insert(
+            "ApiKey",
+            self.api_key.parse().expect("Failed to parse api key"),
+        );
+        let now = Utc::now();
+        header_map.insert(
+            "Request-Time",
+            now.timestamp_millis().to_string().parse().expect("Failed to parse request time"),
+        );
+        let sign_request_params = SignRequestParams {
+            time: now,
+            api_key: &self.api_key,
+            secret_key: &self.secret_key,
+            params,
+        };
+        let sign_request_output = auth::sign_request(sign_request_params)?;
+        header_map.insert("Signature", sign_request_output.signature.parse().expect("Failed to parse signature"));
+        Ok(header_map)
     }
 
     #[cfg(test)]
@@ -85,4 +108,10 @@ impl MexcFuturesApiClientWithAuthentication {
         let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
         Self::new(MexcFuturesApiEndpoint::Base, api_key, secret_key)
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetAuthHeaderMapError {
+    #[error("Sign request error: {0}")]
+    SignRequestError(#[from] auth::SignRequestError),
 }

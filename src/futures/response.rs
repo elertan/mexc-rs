@@ -20,7 +20,7 @@ pub struct SuccessApiResponse<T> {
 #[serde(rename_all = "camelCase")]
 pub struct ErrorApiResponse {
     pub code: ErrorCode,
-    pub msg: String,
+    pub message: String,
 }
 
 impl<T> ApiResponse<T> {
@@ -43,6 +43,6 @@ impl Error for ErrorApiResponse {}
 
 impl Display for ErrorApiResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error response: code: {}, msg: {}", self.code, self.msg)
+        write!(f, "Error response: code: {}, msg: {}", self.code, self.message)
     }
 }

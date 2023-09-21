@@ -1,6 +1,7 @@
 // https://mxcdevelop.github.io/apidocs/contract_v1_en/#error-code-example
 
 use std::fmt::{Display, Formatter};
+use crate::futures::GetAuthHeaderMapError;
 use crate::futures::response::ErrorApiResponse;
 
 #[derive(Debug, thiserror::Error)]
@@ -9,6 +10,8 @@ pub enum ApiError {
     ReqwestError(#[from] reqwest::Error),
     #[error("Error response: {0:?}")]
     ErrorResponse(#[from] ErrorApiResponse),
+    #[error("Get auth header map error: {0:?}")]
+    GetAuthHeaderMapError(#[from] GetAuthHeaderMapError),
 }
 
 // 0 	Operate succeed
