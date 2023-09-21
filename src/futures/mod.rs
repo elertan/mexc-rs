@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::futures::auth::SignRequestParams;
+use crate::futures::auth::{SignRequestParams, SignRequestParamsKind};
 
 pub mod error;
 pub mod result;
@@ -76,7 +76,7 @@ impl MexcFuturesApiClientWithAuthentication {
         }
     }
 
-    fn get_auth_header_map<T>(&self, params: &T) -> Result<reqwest::header::HeaderMap, GetAuthHeaderMapError>
+    fn get_auth_header_map<T>(&self, params: &T, kind: SignRequestParamsKind) -> Result<reqwest::header::HeaderMap, GetAuthHeaderMapError>
         where
             T: serde::Serialize,
     {
@@ -95,6 +95,7 @@ impl MexcFuturesApiClientWithAuthentication {
             api_key: &self.api_key,
             secret_key: &self.secret_key,
             params,
+            params_kind: kind,
         };
         let sign_request_output = auth::sign_request(sign_request_params)?;
         header_map.insert("Signature", sign_request_output.signature.parse().expect("Failed to parse signature"));
