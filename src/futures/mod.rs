@@ -64,7 +64,7 @@ pub struct MexcFuturesApiClientWithAuthentication {
 
 impl MexcFuturesApiClientWithAuthentication {
     pub fn new(endpoint: MexcFuturesApiEndpoint, api_key: String, secret_key: String) -> Self {
-        let mut headers = reqwest::header::HeaderMap::new();
+        let _headers = reqwest::header::HeaderMap::new();
         let reqwest_client = reqwest::Client::builder()
             .build()
             .expect("Failed to build reqwest client");
