@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use futures::{StreamExt};
 use futures::stream::{BoxStream, SplitSink};
@@ -219,9 +219,9 @@ pub(crate) struct ChannelMessageData {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ChannelMessageDeal {
     #[serde(rename = "p")]
-    pub price: BigDecimal,
+    pub price: Decimal,
     #[serde(rename = "v")]
-    pub quantity: BigDecimal,
+    pub quantity: Decimal,
     #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
     pub timestamp: DateTime<Utc>,
     #[serde(rename = "S")]

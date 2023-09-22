@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use crate::spot::v3::{ApiResponse, ApiResult};
@@ -22,11 +22,11 @@ pub struct TradesOutput {
 pub struct Trade {
     /// Currently always filled with null
     pub id: Option<serde_json::Value>,
-    pub price: BigDecimal,
+    pub price: Decimal,
     #[serde(rename = "qty")]
-    pub quantity: BigDecimal,
+    pub quantity: Decimal,
     #[serde(rename = "quoteQty")]
-    pub quote_quantity: BigDecimal,
+    pub quote_quantity: Decimal,
     #[serde(with = "chrono::serde::ts_seconds")]
     pub time: DateTime<Utc>,
     pub is_buyer_maker: bool,

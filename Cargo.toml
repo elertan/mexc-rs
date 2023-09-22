@@ -26,7 +26,7 @@ tracing = "0.1.37"
 thiserror = "1.0.44"
 tokio-tungstenite = { version = "0.20.0", features = ["native-tls"] }
 reqwest = { version = "0.11.18", features = ["json"] }
-decimal = { version = "2.1.0", features = ["serde"] }
+rust_decimal = { version = "1.31.0", features = ["serde"] }
 async-trait = "0.1.72"
 serde_path_to_error = "0.1.14"
 dotenv = "0.15.0"

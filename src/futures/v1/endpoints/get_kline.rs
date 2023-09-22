@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, TimeZone, Utc};
 use reqwest::Client;
 use crate::futures::{MexcFuturesApiClient, MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
@@ -37,12 +37,12 @@ impl From<GetKlineParams<'_>> for GetKlineQuery {
 #[derive(Debug, serde::Deserialize)]
 pub struct KlineData {
     pub time: Vec<i64>,
-    pub open: Vec<BigDecimal>,
-    pub close: Vec<BigDecimal>,
-    pub high: Vec<BigDecimal>,
-    pub low: Vec<BigDecimal>,
-    pub vol: Vec<BigDecimal>,
-    pub amount: Vec<BigDecimal>,
+    pub open: Vec<Decimal>,
+    pub close: Vec<Decimal>,
+    pub high: Vec<Decimal>,
+    pub low: Vec<Decimal>,
+    pub vol: Vec<Decimal>,
+    pub amount: Vec<Decimal>,
 }
 
 #[derive(Debug)]

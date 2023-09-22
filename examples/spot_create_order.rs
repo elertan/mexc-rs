@@ -1,4 +1,4 @@
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use dotenv::dotenv;
 use mexc_rs::spot::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
 use mexc_rs::spot::v3::enums::{OrderSide, OrderType};
@@ -24,9 +24,9 @@ async fn main() -> anyhow::Result<()> {
         symbol: "KASUSDT",
         side: OrderSide::Buy,
         order_type: OrderType::Limit,
-        quantity: Some(BigDecimal::from_str("5000")?),
+        quantity: Some(Decimal::from_str("5000")?),
         quote_order_quantity: None,
-        price: Some(BigDecimal::from_str("0.001")?),
+        price: Some(Decimal::from_str("0.001")?),
         new_client_order_id: None,
     };
     let order_output = client.order(order_params).await?;

@@ -1,4 +1,4 @@
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::ws::ChannelMessage;
 
@@ -10,8 +10,8 @@ pub struct SpotDealsMessage {
 #[derive(Debug)]
 pub struct SpotDeal {
     pub symbol: String,
-    pub price: BigDecimal,
-    pub quantity: BigDecimal,
+    pub price: Decimal,
+    pub quantity: Decimal,
     pub timestamp: DateTime<Utc>,
     pub trade_type: i32,
 }

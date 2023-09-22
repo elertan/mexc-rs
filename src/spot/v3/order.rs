@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::MexcSpotApiClientWithAuthentication;
 use crate::spot::v3::{ApiResponse, ApiResult};
@@ -10,9 +10,9 @@ pub struct OrderParams<'a> {
     pub symbol: &'a str,
     pub side: OrderSide,
     pub order_type: OrderType,
-    pub quantity: Option<BigDecimal>,
-    pub quote_order_quantity: Option<BigDecimal>,
-    pub price: Option<BigDecimal>,
+    pub quantity: Option<Decimal>,
+    pub quote_order_quantity: Option<Decimal>,
+    pub price: Option<Decimal>,
     pub new_client_order_id: Option<&'a str>,
 }
 
@@ -24,11 +24,11 @@ pub struct OrderQuery<'a> {
     #[serde(rename = "type")]
     pub order_type: OrderType,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub quantity: Option<BigDecimal>,
+    pub quantity: Option<Decimal>,
     #[serde(rename = "quoteOrderQty", skip_serializing_if = "Option::is_none")]
-    pub quote_order_quantity: Option<BigDecimal>,
+    pub quote_order_quantity: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub price: Option<BigDecimal>,
+    pub price: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub new_client_order_id: Option<&'a str>,
     /// Max 60000
@@ -60,8 +60,8 @@ pub struct OrderOutput {
     pub symbol: String,
     pub order_id: String,
     pub order_list_id: Option<i32>,
-    pub price: BigDecimal,
-    pub orig_qty: BigDecimal,
+    pub price: Decimal,
+    pub orig_qty: Decimal,
     #[serde(rename = "type")]
     pub order_type: OrderType,
     pub side: OrderSide,
@@ -103,9 +103,9 @@ mod tests {
             symbol: "KASUSDT",
             side: OrderSide::Buy,
             order_type: OrderType::Limit,
-            quantity: Some(BigDecimal::from(5000)),
+            quantity: Some(Decimal::from(5000)),
             quote_order_quantity: None,
-            price: Some(BigDecimal::from_str("0.001").unwrap()),
+            price: Some(Decimal::from_str("0.001").unwrap()),
             new_client_order_id: None,
         };
         let result = client.order(params).await;

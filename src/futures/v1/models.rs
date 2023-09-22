@@ -1,17 +1,17 @@
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountAsset {
     pub currency: String,
-    pub position_margin: BigDecimal,
-    pub frozen_balance: BigDecimal,
-    pub available_balance: BigDecimal,
-    pub cash_balance: BigDecimal,
-    pub equity: BigDecimal,
-    pub unrealized: BigDecimal,
-    pub bonus: Option<BigDecimal>,
+    pub position_margin: Decimal,
+    pub frozen_balance: Decimal,
+    pub available_balance: Decimal,
+    pub cash_balance: Decimal,
+    pub equity: Decimal,
+    pub unrealized: Decimal,
+    pub bonus: Option<Decimal>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -20,28 +20,28 @@ pub struct OpenPosition {
     pub position_id: i64,
     pub symbol: String,
     #[serde(rename = "holdVol")]
-    pub holding_volume: BigDecimal,
+    pub holding_volume: Decimal,
     pub position_type: PositionType,
     pub open_type: OpenType,
     pub state: PositionState,
     #[serde(rename = "frozenVol")]
-    pub frozen_volume: BigDecimal,
+    pub frozen_volume: Decimal,
     #[serde(rename = "closeVol")]
-    pub close_volume: BigDecimal,
+    pub close_volume: Decimal,
     #[serde(rename = "holdAvgPrice")]
-    pub holdings_average_price: BigDecimal,
+    pub holdings_average_price: Decimal,
     #[serde(rename = "closeAvgPrice")]
-    pub close_average_price: BigDecimal,
+    pub close_average_price: Decimal,
     #[serde(rename = "openAvgPrice")]
-    pub open_average_price: BigDecimal,
-    pub liquidate_price: BigDecimal,
+    pub open_average_price: Decimal,
+    pub liquidate_price: Decimal,
     #[serde(rename = "oim")]
-    pub original_initial_margin: BigDecimal,
+    pub original_initial_margin: Decimal,
     pub adl_level: Option<i8>,
     #[serde(rename = "im")]
-    pub initial_margin: BigDecimal,
-    pub hold_fee: BigDecimal,
-    pub realised: BigDecimal,
+    pub initial_margin: Decimal,
+    pub hold_fee: Decimal,
+    pub realised: Decimal,
     #[serde(with = "chrono::serde::ts_milliseconds")]
     pub create_time: DateTime<Utc>,
     #[serde(with = "chrono::serde::ts_milliseconds_option")]
@@ -77,22 +77,22 @@ pub struct OpenOrder {
     pub symbol: String,
     pub position_id: i64,
     #[serde(rename = "price")]
-    pub trigger_price: BigDecimal,
+    pub trigger_price: Decimal,
     #[serde(rename = "vol")]
-    pub trigger_volume: BigDecimal,
+    pub trigger_volume: Decimal,
     pub leverage: i32,
     pub side: OrderSide,
     pub category: OrderCategory,
     pub order_type: OrderType,
     #[serde(rename = "dealAvgPrice")]
-    pub deal_average_price: BigDecimal,
+    pub deal_average_price: Decimal,
     #[serde(rename = "dealVol")]
-    pub deal_volume: BigDecimal,
-    pub order_margin: BigDecimal,
-    pub used_margin: BigDecimal,
-    pub taker_fee: BigDecimal,
-    pub maker_fee: BigDecimal,
-    pub profit: BigDecimal,
+    pub deal_volume: Decimal,
+    pub order_margin: Decimal,
+    pub used_margin: Decimal,
+    pub taker_fee: Decimal,
+    pub maker_fee: Decimal,
+    pub profit: Decimal,
     pub fee_currency: String,
     pub open_type: OpenType,
     pub state: OrderState,
@@ -103,8 +103,8 @@ pub struct OpenOrder {
     pub create_time: DateTime<Utc>,
     #[serde(with = "chrono::serde::ts_milliseconds_option")]
     pub update_time: Option<DateTime<Utc>>,
-    pub stop_loss_price: Option<BigDecimal>,
-    pub take_profit_price: Option<BigDecimal>,
+    pub stop_loss_price: Option<Decimal>,
+    pub take_profit_price: Option<Decimal>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
@@ -213,12 +213,12 @@ pub enum KlineInterval {
 #[derive(Debug)]
 pub struct Kline {
     pub time: DateTime<Utc>,
-    pub open: BigDecimal,
-    pub high: BigDecimal,
-    pub low: BigDecimal,
-    pub close: BigDecimal,
-    pub volume: BigDecimal,
-    pub amount: BigDecimal,
+    pub open: Decimal,
+    pub high: Decimal,
+    pub low: Decimal,
+    pub close: Decimal,
+    pub volume: Decimal,
+    pub amount: Decimal,
 }
 
 #[cfg(test)]

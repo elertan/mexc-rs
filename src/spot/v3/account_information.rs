@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::MexcSpotApiClientWithAuthentication;
 use crate::spot::v3::{ApiResponse, ApiResult};
@@ -7,10 +7,10 @@ use crate::spot::v3::{ApiResponse, ApiResult};
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountInformationOutput {
-    pub maker_commission: BigDecimal,
-    pub taker_commission: BigDecimal,
-    pub buyer_commission: BigDecimal,
-    pub seller_commission: BigDecimal,
+    pub maker_commission: Decimal,
+    pub taker_commission: Decimal,
+    pub buyer_commission: Decimal,
+    pub seller_commission: Decimal,
     pub can_trade: bool,
     pub can_withdraw: bool,
     pub can_deposit: bool,
@@ -25,8 +25,8 @@ pub struct AccountInformationOutput {
 #[serde(rename_all = "camelCase")]
 pub struct AccountBalance {
     pub asset: String,
-    pub free: BigDecimal,
-    pub locked: BigDecimal,
+    pub free: Decimal,
+    pub locked: Decimal,
 }
 
 #[async_trait]

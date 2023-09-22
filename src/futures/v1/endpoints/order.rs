@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use crate::futures::{MexcFuturesApiClientWithAuthentication};
 use crate::futures::auth::SignRequestParamsKind;
 use crate::futures::response::ApiResponse;
@@ -9,16 +9,16 @@ use crate::futures::v1::models::{OpenType, OrderSide, OrderType, PositionMode};
 #[derive(Debug)]
 pub struct OrderParams<'a> {
     pub symbol: &'a str,
-    pub price: BigDecimal,
-    pub volume: BigDecimal,
+    pub price: Decimal,
+    pub volume: Decimal,
     pub leverage: Option<u32>,
     pub side: OrderSide,
     pub order_type: OrderType,
     pub open_type: OpenType,
     pub position_id: Option<i64>,
     pub external_order_id: Option<&'a str>,
-    pub stop_loss_price: Option<BigDecimal>,
-    pub take_profit_price: Option<BigDecimal>,
+    pub stop_loss_price: Option<Decimal>,
+    pub take_profit_price: Option<Decimal>,
     pub position_mode: Option<PositionMode>,
     pub reduce_only: Option<bool>,
 }
@@ -37,9 +37,9 @@ pub trait Order {
 #[serde(rename_all = "camelCase")]
 pub struct OrderPayload<'a> {
     pub symbol: &'a str,
-    pub price: BigDecimal,
+    pub price: Decimal,
     #[serde(rename = "vol")]
-    pub volume: BigDecimal,
+    pub volume: Decimal,
     pub leverage: Option<u32>,
     pub side: OrderSide,
     pub order_type: OrderType,
@@ -47,8 +47,8 @@ pub struct OrderPayload<'a> {
     pub position_id: Option<i64>,
     #[serde(rename = "externalOid")]
     pub external_order_id: Option<&'a str>,
-    pub stop_loss_price: Option<BigDecimal>,
-    pub take_profit_price: Option<BigDecimal>,
+    pub stop_loss_price: Option<Decimal>,
+    pub take_profit_price: Option<Decimal>,
     pub position_mode: Option<PositionMode>,
     pub reduce_only: Option<bool>,
 }

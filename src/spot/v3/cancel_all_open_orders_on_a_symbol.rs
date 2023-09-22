@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::MexcSpotApiClientWithAuthentication;
 use crate::spot::v3::{ApiResponse, ApiResult};
@@ -42,13 +42,13 @@ pub struct CanceledOrder {
     pub symbol: String,
     pub order_id: String,
     pub client_order_id: Option<String>,
-    pub price: BigDecimal,
+    pub price: Decimal,
     #[serde(rename = "origQty")]
-    pub original_quantity: BigDecimal,
+    pub original_quantity: Decimal,
     #[serde(rename = "executedQty")]
-    pub executed_quantity: BigDecimal,
+    pub executed_quantity: Decimal,
     #[serde(rename = "cummulativeQuoteQty")]
-    pub cummulative_quote_quantity: BigDecimal,
+    pub cummulative_quote_quantity: Decimal,
     pub status: OrderStatus,
     pub time_in_force: Option<String>,
     #[serde(rename = "type")]

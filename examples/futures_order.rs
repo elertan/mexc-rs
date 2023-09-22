@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use dotenv::dotenv;
 use mexc_rs::futures::{MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
 use mexc_rs::futures::v1::endpoints::order::{Order, OrderParams};
@@ -17,8 +17,8 @@ async fn main() -> anyhow::Result<()> {
     let client = MexcFuturesApiClientWithAuthentication::new(MexcFuturesApiEndpoint::Base, api_key, secret_key);
     let params = OrderParams {
         symbol: "KAS_USDT",
-        price: BigDecimal::from_str("0.001").unwrap(),
-        volume: BigDecimal::from_str("50000").unwrap(),
+        price: Decimal::from_str("0.001").unwrap(),
+        volume: Decimal::from_str("50000").unwrap(),
         leverage: None,
         side: OrderSide::OpenLong,
         order_type: OrderType::PriceLimitedOrder,

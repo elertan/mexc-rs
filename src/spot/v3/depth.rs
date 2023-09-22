@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use crate::spot::v3::{ApiResponse, ApiResult};
 
@@ -14,8 +14,8 @@ pub struct DepthParams<'a> {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct PriceAndQuantity {
-    pub price: BigDecimal,
-    pub quantity: BigDecimal,
+    pub price: Decimal,
+    pub quantity: Decimal,
 }
 
 #[derive(Debug, serde::Deserialize)]

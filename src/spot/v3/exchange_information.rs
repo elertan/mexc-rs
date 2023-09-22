@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use crate::spot::v3::{ApiResponse, ApiResult};
@@ -28,13 +28,13 @@ pub struct ExchangeInformationSymbol {
     pub quote_order_qty_market_allowed: Option<bool>,
     pub is_spot_trading_allowed: bool,
     pub is_margin_trading_allowed: bool,
-    pub quote_amount_precision: BigDecimal,
-    pub base_size_precision: BigDecimal,
+    pub quote_amount_precision: Decimal,
+    pub base_size_precision: Decimal,
     pub permissions: Vec<String>,
     pub filters: Vec<serde_json::Value>,
-    pub max_quote_amount: BigDecimal,
-    pub maker_commission: BigDecimal,
-    pub taker_commission: BigDecimal,
+    pub max_quote_amount: Decimal,
+    pub maker_commission: Decimal,
+    pub taker_commission: Decimal,
 }
 
 

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{DateTime, TimeZone, Utc};
 use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use crate::spot::v3::{ApiError, ApiResult, ErrorResponse};
@@ -33,14 +33,14 @@ pub struct KlinesOutput {
 pub struct Kline {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub open_time: DateTime<Utc>,
-    pub open: BigDecimal,
-    pub high: BigDecimal,
-    pub low: BigDecimal,
-    pub close: BigDecimal,
-    pub volume: BigDecimal,
+    pub open: Decimal,
+    pub high: Decimal,
+    pub low: Decimal,
+    pub close: Decimal,
+    pub volume: Decimal,
     #[serde(with = "chrono::serde::ts_seconds")]
     pub close_time: DateTime<Utc>,
-    pub quote_asset_volume: BigDecimal,
+    pub quote_asset_volume: Decimal,
 }
 
 #[async_trait]
@@ -85,9 +85,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for open: {}", err);
+                    tracing::error!("Unable to parse Decimal for open: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
@@ -96,9 +96,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for high: {}", err);
+                    tracing::error!("Unable to parse Decimal for high: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
@@ -107,9 +107,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for low: {}", err);
+                    tracing::error!("Unable to parse Decimal for low: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
@@ -118,9 +118,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for close: {}", err);
+                    tracing::error!("Unable to parse Decimal for close: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
@@ -129,9 +129,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for volume: {}", err);
+                    tracing::error!("Unable to parse Decimal for volume: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
@@ -147,9 +147,9 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
                 .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<BigDecimal>()
+                .parse::<Decimal>()
                 .map_err(|err| {
-                    tracing::error!("Unable to parse BigDecimal for quote_asset_volume: {}", err);
+                    tracing::error!("Unable to parse Decimal for quote_asset_volume: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
 
