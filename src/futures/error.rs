@@ -96,6 +96,7 @@ pub enum ErrorCode {
     SystemBusy = 501,
     Unauthorized = 401,
     ApiKeyExpired = 402,
+    NotFound = 404,
     AccessedIpNotInWhitelist = 406,
     UnknownSourceOfRequest = 506,
     ExcessiveFrequencyOfRequests = 510,

@@ -167,6 +167,60 @@ pub enum PositionMode {
     OneWay = 2
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum KlineInterval {
+    /// 1 minute
+    #[serde(rename = "Min1")]
+    OneMinute,
+
+    /// 5 minutes
+    #[serde(rename = "Min5")]
+    FiveMinutes,
+
+    /// 15 minutes
+    #[serde(rename = "Min15")]
+    FifteenMinutes,
+
+    /// 30 minutes
+    #[serde(rename = "Min30")]
+    ThirtyMinutes,
+
+    /// 1 hour
+    #[serde(rename = "Min60")]
+    OneHour,
+
+    /// 4 hours
+    #[serde(rename = "Hour4")]
+    FourHours,
+
+    /// 8 hours
+    #[serde(rename = "Hour8")]
+    EightHours,
+
+    /// 1 day
+    #[serde(rename = "Day1")]
+    OneDay,
+
+    /// 1 week
+    #[serde(rename = "Week1")]
+    OneWeek,
+
+    /// 1 month
+    #[serde(rename = "Month1")]
+    OneMonth,
+}
+
+#[derive(Debug)]
+pub struct Kline {
+    pub time: DateTime<Utc>,
+    pub open: BigDecimal,
+    pub high: BigDecimal,
+    pub low: BigDecimal,
+    pub close: BigDecimal,
+    pub volume: BigDecimal,
+    pub amount: BigDecimal,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
