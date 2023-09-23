@@ -92,7 +92,7 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(err) => Err(err),
-            Self::ErrorStringifiedCode(esc) => Err(esc.try_into().map_err(|err| ErrorResponse {
+            Self::ErrorStringifiedCode(esc) => Err(esc.try_into().map_err(|_err| ErrorResponse {
                 msg: format!("Stringified error code cannot be parsed", ),
                 code: ErrorCode::InvalidResponse,
                 _extend: None,
@@ -104,7 +104,7 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(response) => Err(ApiError::ErrorResponse(response)),
-            Self::ErrorStringifiedCode(esc) => Err(ApiError::ErrorResponse(esc.try_into().map_err(|err| ErrorResponse {
+            Self::ErrorStringifiedCode(esc) => Err(ApiError::ErrorResponse(esc.try_into().map_err(|_err| ErrorResponse {
                 msg: format!("Stringified error code cannot be parsed", ),
                 code: ErrorCode::InvalidResponse,
                 _extend: None,

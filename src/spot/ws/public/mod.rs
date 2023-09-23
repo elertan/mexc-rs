@@ -57,7 +57,7 @@ impl MexcSpotPublicWsClient {
 
         tokio::spawn({
             let cancellation_token = cancellation_token.clone();
-            let message_sink_tx = message_sink_tx.clone();
+            let _message_sink_tx = message_sink_tx.clone();
             async move {
                 loop {
                     tokio::select! {

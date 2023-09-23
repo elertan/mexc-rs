@@ -81,7 +81,7 @@ impl PublicSubscribe for MexcSpotPublicWsClient {
 
         {
             tracing::debug!("Acquiring websocket...");
-            let mut awo = self.acquire_websocket().await?;
+            let awo = self.acquire_websocket().await?;
             let message_tx = awo.message_sender();
 
             tracing::debug!("Sending message: {:?}", &message);
@@ -183,7 +183,7 @@ impl PublicUnsubscribe for MexcSpotPublicWsClient {
 
         {
             tracing::debug!("Acquiring websocket...");
-            let mut awo = self.acquire_websocket().await?;
+            let awo = self.acquire_websocket().await?;
             let ws_tx = awo.message_sender();
 
             tracing::debug!("Sending message: {:?}", &message);

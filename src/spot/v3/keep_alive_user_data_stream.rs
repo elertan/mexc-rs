@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crate::spot::{MexcSpotApiClientWithAuthentication, QueryWithSignature};
+use crate::spot::{MexcSpotApiClientWithAuthentication};
 use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug)]

@@ -3,7 +3,7 @@ use crate::futures::{MexcFuturesApiClientWithAuthentication};
 use crate::futures::auth::SignRequestParamsKind;
 use crate::futures::response::ApiResponse;
 use crate::futures::result::ApiResult;
-use crate::futures::v1::models::{OpenOrder, OpenPosition};
+use crate::futures::v1::models::{OpenOrder};
 
 #[derive(Debug)]
 pub struct GetOpenOrdersParams {

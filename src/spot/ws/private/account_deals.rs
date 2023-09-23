@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use crate::spot::v3::enums::{ChangedType, OrderSide, TradeType};
+use crate::spot::v3::enums::{OrderSide};
 use crate::spot::ws::private::{PrivateChannelMessage, PrivateChannelMessageData};
 
 #[derive(Debug, thiserror::Error)]

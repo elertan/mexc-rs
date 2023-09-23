@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ops::ControlFlow;
-use futures::stream::{BoxStream, SplitSink};
+use futures::stream::{BoxStream};
 use tokio::sync::{Mutex, MutexGuard};
 use tokio_tungstenite::tungstenite::Message;
 use std::sync::Arc;
@@ -72,7 +72,7 @@ impl MexcSpotPrivateWsClient {
 
         tokio::spawn({
             let cancellation_token = cancellation_token.clone();
-            let message_sink_tx = message_sink_tx.clone();
+            let _message_sink_tx = message_sink_tx.clone();
             async move {
                 loop {
                     tokio::select! {
