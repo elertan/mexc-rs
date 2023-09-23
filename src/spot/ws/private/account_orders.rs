@@ -53,6 +53,7 @@ pub(crate) fn channel_message_to_account_orders_message(message: &PrivateChannel
                 average_price: limit_or_market.ap,
                 cumulative_quantity: limit_or_market.cv,
                 cumulative_amount: limit_or_market.ca,
+                timestamp: message.timestamp,
             };
             AccountOrdersMessage::LimitOrMarket(msg)
         }
@@ -69,6 +70,7 @@ pub(crate) fn channel_message_to_account_orders_message(message: &PrivateChannel
                 price: stop_limit.p,
                 state: StopLimitOrderState::from_u8(stop_limit.s).ok_or(ChannelMessageToAccountOrdersMessageError::InvalidStopLimitOrderState)?,
                 quantity: stop_limit.v,
+                timestamp: message.timestamp,
             };
             AccountOrdersMessage::StopLimit(msg)
         }
@@ -101,6 +103,7 @@ pub struct LimitOrMarketAccountOrdersMessage {
     pub average_price: Decimal,
     pub cumulative_quantity: Decimal,
     pub cumulative_amount: Decimal,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, num_derive::FromPrimitive)]
@@ -127,6 +130,7 @@ pub struct StopLimitAccountOrdersMessage {
     pub price: Decimal,
     pub state: StopLimitOrderState,
     pub quantity: Decimal,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, num_derive::FromPrimitive)]
