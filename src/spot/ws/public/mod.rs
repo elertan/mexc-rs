@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::ControlFlow;
 use futures::stream::{BoxStream};
 use tokio::sync::{Mutex, MutexGuard};
@@ -9,11 +10,13 @@ use futures::{SinkExt, StreamExt};
 use tokio_util::sync::CancellationToken;
 use crate::spot::ws::MexcSpotWsEndpoint;
 use crate::spot::ws::public::spot_deals::{channel_message_to_spot_deals_message, SpotDealsMessage};
+use crate::spot::ws::public::subscription::PublicSubscriptionTopic;
 
 pub mod subscription;
 pub mod spot_deals;
 
 struct MexcSpotPublicWsClientInner {
+    subscriptions: HashSet<PublicSubscriptionTopic>,
     message_sink_tx: Option<async_channel::Sender<Message>>,
 }
 
@@ -31,6 +34,7 @@ impl MexcSpotPublicWsClient {
         let (ws_message_tx, ws_message_rx) = async_broadcast::broadcast(1000000);
         let (ws_raw_message_tx, ws_raw_message_rx) = async_broadcast::broadcast(1000000);
         let inner = Arc::new(Mutex::new(MexcSpotPublicWsClientInner {
+            subscriptions: HashSet::new(),
             message_sink_tx: None,
         }));
 
@@ -165,6 +169,26 @@ impl MexcSpotPublicWsClient {
             }
         };
         stream.boxed()
+    }
+
+    async fn has_subscription_topic(&self, subscription_topic: &PublicSubscriptionTopic) -> bool {
+        let inner = self.inner.lock().await;
+        inner.subscriptions.contains(subscription_topic)
+    }
+
+    async fn add_subscription_topic(&self, subscription_topic: PublicSubscriptionTopic) {
+        let mut inner = self.inner.lock().await;
+        inner.subscriptions.insert(subscription_topic);
+    }
+
+    async fn remove_subscription_topic(&self, subscription_topic: &PublicSubscriptionTopic) {
+        let mut inner = self.inner.lock().await;
+        inner.subscriptions.remove(subscription_topic);
+    }
+
+    pub async fn get_subscription_topics(&self) -> Vec<PublicSubscriptionTopic> {
+        let inner = self.inner.lock().await;
+        inner.subscriptions.iter().cloned().collect()
     }
 }
 

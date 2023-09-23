@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use mexc_rs::spot::ws::public::subscription::{
-    PublicSpotDealsSubscriptionRequest, PublicSubscribe, PublicSubscribeParams, PublicSubscriptionRequest,
+    PublicSpotDealsSubscriptionTopic, PublicSubscribe, PublicSubscribeParams, PublicSubscriptionTopic,
 };
 use mexc_rs::spot::ws::public::{MexcSpotPublicWsClient, PublicMexcSpotWsMessage};
 use tracing_subscriber::util::SubscriberInitExt;
@@ -12,11 +12,11 @@ async fn main() {
 
     let ws_client = MexcSpotPublicWsClient::default();
     let subscribe_params = PublicSubscribeParams {
-        subscription_requests: vec![
-            PublicSubscriptionRequest::SpotDeals(PublicSpotDealsSubscriptionRequest {
+        subscription_topics: vec![
+            PublicSubscriptionTopic::SpotDeals(PublicSpotDealsSubscriptionTopic {
                 symbol: "BTCUSDT".to_string(),
             }),
-            PublicSubscriptionRequest::SpotDeals(PublicSpotDealsSubscriptionRequest {
+            PublicSubscriptionTopic::SpotDeals(PublicSpotDealsSubscriptionTopic {
                 symbol: "KASUSDT".to_string(),
             }),
         ],
