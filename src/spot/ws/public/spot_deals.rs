@@ -1,6 +1,6 @@
 use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
-use crate::spot::ws::ChannelMessage;
+use crate::spot::ws::public::ChannelMessage;
 
 #[derive(Debug)]
 pub struct SpotDealsMessage {

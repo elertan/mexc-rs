@@ -1,8 +1,8 @@
 use futures::StreamExt;
-use mexc_rs::spot::ws::subscription::{
+use mexc_rs::spot::ws::public::subscription::{
     SpotDealsSubscriptionRequest, Subscribe, SubscribeParams, SubscriptionRequest,
 };
-use mexc_rs::spot::ws::{MexcSpotWsClient, MexcSpotWsMessage};
+use mexc_rs::spot::ws::public::{MexcSpotWsClient, MexcSpotWsMessage};
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[tokio::main]
