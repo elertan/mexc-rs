@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::ControlFlow;
 use futures::stream::{BoxStream, SplitSink};
 use tokio::sync::{Mutex, MutexGuard};
@@ -16,6 +17,7 @@ use crate::spot::ws::MexcSpotWsEndpoint;
 use crate::spot::ws::private::account_deals::channel_message_to_account_deals_message;
 use crate::spot::ws::private::account_orders::channel_message_to_account_orders_message;
 use crate::spot::ws::private::account_update::channel_message_to_account_update_message;
+use crate::spot::ws::private::subscription::PrivateSubscriptionTopic;
 
 pub mod subscription;
 pub mod account_update;
@@ -23,6 +25,7 @@ pub mod account_deals;
 pub mod account_orders;
 
 struct MexcSpotPrivateWsClientInner {
+    subscriptions: HashSet<PrivateSubscriptionTopic>,
     message_sink_tx: Option<async_channel::Sender<Message>>,
 }
 
@@ -41,6 +44,7 @@ impl MexcSpotPrivateWsClient {
         let (ws_message_tx, ws_message_rx) = async_broadcast::broadcast(1000000);
         let (ws_raw_message_tx, ws_raw_message_rx) = async_broadcast::broadcast(1000000);
         let inner = Arc::new(Mutex::new(MexcSpotPrivateWsClientInner {
+            subscriptions: HashSet::new(),
             message_sink_tx: None,
         }));
 
@@ -210,6 +214,26 @@ impl MexcSpotPrivateWsClient {
             }
         };
         stream.boxed()
+    }
+
+    async fn has_subscription_topic(&self, subscription_topic: &PrivateSubscriptionTopic) -> bool {
+        let inner = self.inner.lock().await;
+        inner.subscriptions.contains(subscription_topic)
+    }
+
+    async fn add_subscription_topic(&self, subscription_topic: PrivateSubscriptionTopic) {
+        let mut inner = self.inner.lock().await;
+        inner.subscriptions.insert(subscription_topic);
+    }
+
+    async fn remove_subscription_topic(&self, subscription_topic: &PrivateSubscriptionTopic) {
+        let mut inner = self.inner.lock().await;
+        inner.subscriptions.remove(subscription_topic);
+    }
+
+    pub async fn get_subscription_topics(&self) -> Vec<PrivateSubscriptionTopic> {
+        let inner = self.inner.lock().await;
+        inner.subscriptions.iter().cloned().collect()
     }
 }
 
