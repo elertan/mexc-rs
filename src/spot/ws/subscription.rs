@@ -42,6 +42,8 @@ pub enum SubscribeError {
     AcquireWebsocketError(#[from] AcquireWebsocketError),
     #[error("Failed to send message: {0}")]
     TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+    #[error("Too many active subscriptions")]
+    TooManyActiveSubscriptions,
 }
 
 #[async_trait]
