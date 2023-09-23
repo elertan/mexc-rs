@@ -4,7 +4,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use mexc_rs::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use mexc_rs::spot::ws::MexcSpotWsEndpoint;
 use mexc_rs::spot::ws::private::{MexcSpotPrivateWsClient, PrivateMexcSpotWsMessage};
-use mexc_rs::spot::ws::private::subscription::{PrivateSubscriptionRequest, Subscribe, SubscribeParams};
+use mexc_rs::spot::ws::private::subscription::{PrivateSubscriptionRequest, PrivateSubscribe, PrivateSubscribeParams};
 
 #[tokio::main]
 async fn main() {
@@ -18,14 +18,14 @@ async fn main() {
     let client =
         MexcSpotApiClientWithAuthentication::new(MexcSpotApiEndpoint::Base, api_key, secret_key);
     let private_ws_client = MexcSpotPrivateWsClient::new(MexcSpotWsEndpoint::Base, client);
-    let subscribe_params = SubscribeParams {
+    let subscribe_params = PrivateSubscribeParams {
         subscription_requests: vec![
             PrivateSubscriptionRequest::AccountUpdate,
         ],
         wait_for_confirmation: None,
     };
     private_ws_client
-        .subscribe(subscribe_params)
+        .private_subscribe(subscribe_params)
         .await
         .expect("Failed to subscribe");
 

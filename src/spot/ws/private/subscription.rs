@@ -5,7 +5,7 @@ use tokio_tungstenite::tungstenite::Message;
 use crate::spot::ws::private::{AcquireWebsocketError, MexcSpotPrivateWsClient, PrivateClientMessagePayload, PrivateRawMexcSpotWsMessage};
 
 #[derive(Debug)]
-pub struct SubscribeParams {
+pub struct PrivateSubscribeParams {
     pub subscription_requests: Vec<PrivateSubscriptionRequest>,
     /// Wait for subscription confirmation response
     ///
@@ -18,11 +18,6 @@ pub enum PrivateSubscriptionRequest {
     AccountUpdate,
 }
 
-#[derive(Debug)]
-pub struct PublicSpotDealsSubscriptionRequest {
-    pub symbol: String,
-}
-
 impl PrivateSubscriptionRequest {
     pub fn to_subscription_param(&self) -> String {
         match self {
@@ -32,28 +27,28 @@ impl PrivateSubscriptionRequest {
 }
 
 #[derive(Debug)]
-pub struct SubscribeOutput {}
+pub struct PrivateSubscribeOutput {}
 
 #[derive(Debug, thiserror::Error)]
-pub enum SubscribeError {
+pub enum PrivateSubscribeError {
     #[error("Failed to serialize payload to JSON: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
     #[error("Failed to acquire websocket: {0}")]
     AcquireWebsocketError(#[from] AcquireWebsocketError),
     #[error("Failed to send message: {0}")]
-    TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+    SendMessageError(#[from] async_channel::SendError<Message>),
     #[error("Too many active subscriptions")]
     TooManyActiveSubscriptions,
 }
 
 #[async_trait]
-pub trait Subscribe {
-    async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError>;
+pub trait PrivateSubscribe {
+    async fn private_subscribe(&self, params: PrivateSubscribeParams) -> Result<PrivateSubscribeOutput, PrivateSubscribeError>;
 }
 
 #[async_trait]
-impl Subscribe for MexcSpotPrivateWsClient {
-    async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
+impl PrivateSubscribe for MexcSpotPrivateWsClient {
+    async fn private_subscribe(&self, params: PrivateSubscribeParams) -> Result<PrivateSubscribeOutput, PrivateSubscribeError> {
         let subscription_params = params.subscription_requests
             .iter()
             .map(|sr| sr.to_subscription_param())
@@ -67,10 +62,10 @@ impl Subscribe for MexcSpotPrivateWsClient {
 
         tracing::debug!("Acquiring websocket...");
         let mut awo = self.acquire_websocket().await?;
-        let ws = awo.websocket_sink();
+        let ws_tx = awo.message_sender();
 
         tracing::debug!("Sending message: {:?}", &message);
-        ws.send(message).await?;
+        ws_tx.send(message).await?;
 
         if params.wait_for_confirmation.unwrap_or(true) {
             tracing::debug!("Waiting for subscription confirmation response...");
@@ -101,7 +96,7 @@ impl Subscribe for MexcSpotPrivateWsClient {
             tracing::debug!("Subscription confirmed");
         }
 
-        Ok(SubscribeOutput {})
+        Ok(PrivateSubscribeOutput {})
     }
 }
 

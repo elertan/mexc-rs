@@ -6,6 +6,7 @@ pub mod v3;
 #[cfg(feature = "ws")]
 pub mod ws;
 
+#[derive(Clone)]
 pub enum MexcSpotApiEndpoint {
     Base,
     Custom(String),
@@ -20,6 +21,7 @@ impl AsRef<str> for MexcSpotApiEndpoint {
     }
 }
 
+#[derive(Clone)]
 pub struct MexcSpotApiClient {
     endpoint: MexcSpotApiEndpoint,
     reqwest_client: reqwest::Client,
@@ -51,6 +53,7 @@ impl Default for MexcSpotApiClient {
     }
 }
 
+#[derive(Clone)]
 pub struct MexcSpotApiClientWithAuthentication {
     endpoint: MexcSpotApiEndpoint,
     reqwest_client: reqwest::Client,

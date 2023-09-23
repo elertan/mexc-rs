@@ -5,7 +5,7 @@ use tokio_tungstenite::tungstenite::Message;
 use crate::spot::ws::public::{AcquireWebsocketError, PublicClientMessagePayload, MexcSpotPublicWsClient, PublicRawMexcSpotWsMessage};
 
 #[derive(Debug)]
-pub struct SubscribeParams {
+pub struct PublicSubscribeParams {
     pub subscription_requests: Vec<PublicSubscriptionRequest>,
     /// Wait for subscription confirmation response
     ///
@@ -32,28 +32,28 @@ impl PublicSubscriptionRequest {
 }
 
 #[derive(Debug)]
-pub struct SubscribeOutput {}
+pub struct PublicSubscribeOutput {}
 
 #[derive(Debug, thiserror::Error)]
-pub enum SubscribeError {
+pub enum PublicSubscribeError {
     #[error("Failed to serialize payload to JSON: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
     #[error("Failed to acquire websocket: {0}")]
     AcquireWebsocketError(#[from] AcquireWebsocketError),
     #[error("Failed to send message: {0}")]
-    TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+    SendMessageError(#[from] async_channel::SendError<Message>),
     #[error("Too many active subscriptions")]
     TooManyActiveSubscriptions,
 }
 
 #[async_trait]
-pub trait Subscribe {
-    async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError>;
+pub trait PublicSubscribe {
+    async fn public_subscribe(&self, params: PublicSubscribeParams) -> Result<PublicSubscribeOutput, PublicSubscribeError>;
 }
 
 #[async_trait]
-impl Subscribe for MexcSpotPublicWsClient {
-    async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
+impl PublicSubscribe for MexcSpotPublicWsClient {
+    async fn public_subscribe(&self, params: PublicSubscribeParams) -> Result<PublicSubscribeOutput, PublicSubscribeError> {
         let subscription_params = params.subscription_requests
             .iter()
             .map(|sr| sr.to_subscription_param())
@@ -67,10 +67,10 @@ impl Subscribe for MexcSpotPublicWsClient {
 
         tracing::debug!("Acquiring websocket...");
         let mut awo = self.acquire_websocket().await?;
-        let ws = awo.websocket_sink();
+        let message_tx = awo.message_sender();
 
         tracing::debug!("Sending message: {:?}", &message);
-        ws.send(message).await?;
+        message_tx.send(message).await?;
 
         if params.wait_for_confirmation.unwrap_or(true) {
             tracing::debug!("Waiting for subscription confirmation response...");
@@ -101,7 +101,7 @@ impl Subscribe for MexcSpotPublicWsClient {
             tracing::debug!("Subscription confirmed");
         }
 
-        Ok(SubscribeOutput {})
+        Ok(PublicSubscribeOutput {})
     }
 }
 
