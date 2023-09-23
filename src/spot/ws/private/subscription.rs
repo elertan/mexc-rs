@@ -16,12 +16,14 @@ pub struct PrivateSubscribeParams {
 #[derive(Debug)]
 pub enum PrivateSubscriptionRequest {
     AccountUpdate,
+    AccountDeals,
 }
 
 impl PrivateSubscriptionRequest {
     pub fn to_subscription_param(&self) -> String {
         match self {
             PrivateSubscriptionRequest::AccountUpdate => "spot@private.account.v3.api".to_string(),
+            PrivateSubscriptionRequest::AccountDeals => "spot@private.deals.v3.api".to_string(),
         }
     }
 }

@@ -20,7 +20,7 @@ async fn main() {
     let private_ws_client = MexcSpotPrivateWsClient::new(MexcSpotWsEndpoint::Base, client);
     let subscribe_params = PrivateSubscribeParams {
         subscription_requests: vec![
-            PrivateSubscriptionRequest::AccountUpdate,
+            PrivateSubscriptionRequest::AccountDeals,
         ],
         wait_for_confirmation: None,
     };
@@ -32,8 +32,8 @@ async fn main() {
     let mut stream = private_ws_client.stream();
     while let Some(message) = stream.next().await {
         match message.as_ref() {
-            PrivateMexcSpotWsMessage::AccountUpdate(account_update_message) => {
-                tracing::info!("Account update: {:#?}", account_update_message);
+            PrivateMexcSpotWsMessage::AccountDeals(account_deals) => {
+                tracing::info!("Account deals: {:#?}", account_deals);
             }
             _ => {},
         }

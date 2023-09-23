@@ -22,6 +22,7 @@ pub(crate) fn channel_message_to_account_update_message(message: &PrivateChannel
         frozen_amount: account_update_data.l,
         frozen_changed_amount: account_update_data.ld,
         changed_type: account_update_data.o,
+        event_time: message.timestamp,
     };
 
     Ok(message)
@@ -36,4 +37,5 @@ pub struct AccountUpdateMessage {
     pub frozen_amount: Decimal,
     pub frozen_changed_amount: Decimal,
     pub changed_type: ChangedType,
+    pub event_time: DateTime<Utc>,
 }

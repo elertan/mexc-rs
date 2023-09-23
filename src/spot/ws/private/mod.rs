@@ -13,10 +13,12 @@ use crate::spot::v3::create_user_data_stream::CreateUserDataStreamEndpoint;
 use crate::spot::v3::enums::ChangedType;
 use crate::spot::v3::keep_alive_user_data_stream::{KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams};
 use crate::spot::ws::MexcSpotWsEndpoint;
+use crate::spot::ws::private::account_deals::channel_message_to_account_deals_message;
 use crate::spot::ws::private::account_update::channel_message_to_account_update_message;
 
 pub mod subscription;
 pub mod account_update;
+pub mod account_deals;
 
 struct MexcSpotPrivateWsClientInner {
     message_sink_tx: Option<async_channel::Sender<Message>>,
@@ -256,7 +258,17 @@ async fn ws_message_receiver(message_opt: Option<Result<Message, tokio_tungsteni
                         return ControlFlow::Break(());
                     }
                 }
+            } else if channel == "spot@private.deals.v3.api" {
+                let result = channel_message_to_account_deals_message(channel_message);
+                match result {
+                    Ok(account_deals_message) => Some(Arc::new(PrivateMexcSpotWsMessage::AccountDeals(account_deals_message))),
+                    Err(err) => {
+                        tracing::error!("Failed to convert channel message to account deals message: {:?}", err);
+                        return ControlFlow::Break(());
+                    }
+                }
             } else {
+                tracing::trace!("Unknown channel: {}", channel);
                 None
             }
         }
@@ -315,6 +327,7 @@ pub struct PrivateClientMessagePayload<'a, T> {
 #[derive(Debug)]
 pub enum PrivateMexcSpotWsMessage {
     AccountUpdate(account_update::AccountUpdateMessage),
+    AccountDeals(account_deals::AccountDealsMessage),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -328,6 +341,8 @@ enum PrivateRawMexcSpotWsMessage {
 pub(crate) struct PrivateChannelMessage {
     #[serde(rename = "c")]
     pub channel: String,
+    #[serde(rename = "s")]
+    pub asset: Option<String>,
     #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
     pub timestamp: DateTime<Utc>,
     #[serde(rename = "d")]
@@ -337,7 +352,8 @@ pub(crate) struct PrivateChannelMessage {
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 pub(crate) enum PrivateChannelMessageData {
-    AccountUpdate(AccountUpdateRawChannelMessageData)
+    AccountUpdate(AccountUpdateRawChannelMessageData),
+    AccountDeals(AccountDealsRawChannelMessageData)
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -350,4 +366,21 @@ pub(crate) struct AccountUpdateRawChannelMessageData {
     pub l: Decimal,
     pub ld: Decimal,
     pub o: ChangedType,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub(crate) struct AccountDealsRawChannelMessageData {
+    pub S: u8,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub T: DateTime<Utc>,
+    pub c: String,
+    pub i: String,
+    pub m: u8,
+    pub p: Decimal,
+    pub st: u8,
+    pub t: String,
+    pub v: Decimal,
+    pub a: Decimal,
+    pub n: Decimal,
+    pub N: String,
 }
