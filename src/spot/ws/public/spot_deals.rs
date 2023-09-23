@@ -1,6 +1,6 @@
 use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
-use crate::spot::ws::public::ChannelMessage;
+use crate::spot::ws::public::PublicChannelMessage;
 
 #[derive(Debug)]
 pub struct SpotDealsMessage {
@@ -22,7 +22,7 @@ pub enum ChannelMessageToSpotDealsMessageError {
     NoDealsMessage,
 }
 
-pub(crate) fn channel_message_to_spot_deals_message(channel_message: &ChannelMessage) -> Result<SpotDealsMessage, ChannelMessageToSpotDealsMessageError> {
+pub(crate) fn channel_message_to_spot_deals_message(channel_message: &PublicChannelMessage) -> Result<SpotDealsMessage, ChannelMessageToSpotDealsMessageError> {
     let Some(deals) = &channel_message.data.deals else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };

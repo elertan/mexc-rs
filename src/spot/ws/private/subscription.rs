@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
-use crate::spot::ws::public::{AcquireWebsocketError, PublicClientMessagePayload, MexcSpotPublicWsClient, PublicRawMexcSpotWsMessage};
+use crate::spot::ws::private::{AcquireWebsocketError, MexcSpotPrivateWsClient, PrivateClientMessagePayload, PrivateRawMexcSpotWsMessage};
 
 #[derive(Debug)]
 pub struct SubscribeParams {
-    pub subscription_requests: Vec<PublicSubscriptionRequest>,
+    pub subscription_requests: Vec<PrivateSubscriptionRequest>,
     /// Wait for subscription confirmation response
     ///
     /// If `None`, defaults to `true`
@@ -14,8 +14,8 @@ pub struct SubscribeParams {
 }
 
 #[derive(Debug)]
-pub enum PublicSubscriptionRequest {
-    SpotDeals(PublicSpotDealsSubscriptionRequest),
+pub enum PrivateSubscriptionRequest {
+    AccountUpdate,
 }
 
 #[derive(Debug)]
@@ -23,10 +23,10 @@ pub struct PublicSpotDealsSubscriptionRequest {
     pub symbol: String,
 }
 
-impl PublicSubscriptionRequest {
+impl PrivateSubscriptionRequest {
     pub fn to_subscription_param(&self) -> String {
         match self {
-            PublicSubscriptionRequest::SpotDeals(spot_deals_sr) => format!("spot@public.deals.v3.api@{}", spot_deals_sr.symbol)
+            PrivateSubscriptionRequest::AccountUpdate => "spot@private.account.v3.api".to_string(),
         }
     }
 }
@@ -52,13 +52,13 @@ pub trait Subscribe {
 }
 
 #[async_trait]
-impl Subscribe for MexcSpotPublicWsClient {
+impl Subscribe for MexcSpotPrivateWsClient {
     async fn subscribe(&self, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
         let subscription_params = params.subscription_requests
             .iter()
             .map(|sr| sr.to_subscription_param())
             .collect::<Vec<String>>();
-        let payload = PublicClientMessagePayload {
+        let payload = PrivateClientMessagePayload {
             method: "SUBSCRIPTION",
             params: subscription_params.clone(),
         };
@@ -77,7 +77,7 @@ impl Subscribe for MexcSpotPublicWsClient {
             let mut raw_stream = self.stream_raw();
             while let Some(raw_msg) = raw_stream.next().await {
                 match raw_msg.as_ref() {
-                    PublicRawMexcSpotWsMessage::IdCodeMsg { msg, .. } => {
+                    PrivateRawMexcSpotWsMessage::IdCodeMsg { msg, .. } => {
                         if msg.is_empty() {
                             continue;
                         }
