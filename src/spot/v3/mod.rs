@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use num_traits::FromPrimitive;
 use reqwest::StatusCode;
 use crate::spot::SignQueryError;
 
@@ -15,7 +16,8 @@ pub mod get_order;
 pub mod cancel_order;
 pub mod cancel_all_open_orders_on_a_symbol;
 pub mod account_information;
-pub mod user_data_stream;
+pub mod create_user_data_stream;
+pub mod keep_alive_user_data_stream;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
@@ -82,6 +84,7 @@ impl From<reqwest::Error> for ApiError {
 pub enum ApiResponse<T> {
     Success(T),
     Error(ErrorResponse),
+    ErrorStringifiedCode(ErrorResponseStringifiedCode),
 }
 
 impl<T> ApiResponse<T> {
@@ -89,6 +92,11 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(err) => Err(err),
+            Self::ErrorStringifiedCode(esc) => Err(esc.try_into().map_err(|err| ErrorResponse {
+                msg: format!("Stringified error code cannot be parsed", ),
+                code: ErrorCode::InvalidResponse,
+                _extend: None,
+            })?)
         }
     }
 
@@ -96,6 +104,11 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(response) => Err(ApiError::ErrorResponse(response)),
+            Self::ErrorStringifiedCode(esc) => Err(ApiError::ErrorResponse(esc.try_into().map_err(|err| ErrorResponse {
+                msg: format!("Stringified error code cannot be parsed", ),
+                code: ErrorCode::InvalidResponse,
+                _extend: None,
+            })?)),
         }
     }
 }
@@ -107,7 +120,36 @@ pub struct ErrorResponse {
     pub _extend: Option<serde_json::Value>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, strum_macros::IntoStaticStr)]
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ErrorResponseStringifiedCode {
+    pub code: String,
+    pub msg: String,
+    pub _extend: Option<serde_json::Value>,
+}
+
+impl TryFrom<ErrorResponseStringifiedCode> for ErrorResponse {
+    type Error = ();
+
+    fn try_from(value: ErrorResponseStringifiedCode) -> Result<Self, Self::Error> {
+        let code = match value.code.parse::<i32>() {
+            Ok(code) => code,
+            Err(_) => return Err(()),
+        };
+        let code = match ErrorCode::from_i32(code) {
+            Some(code) => code,
+            None => return Err(()),
+        };
+
+        Ok(Self {
+            code,
+            msg: value.msg,
+            _extend: value._extend,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, strum_macros::IntoStaticStr, num_derive::FromPrimitive)]
 #[repr(i32)]
 pub enum ErrorCode {
     UnknownOrderSent = -2011,
@@ -205,6 +247,7 @@ pub enum ErrorCode {
     SubAccountDoesNotExist = 140001,
     SubAccountIsForbidden = 140002,
     OrderDoesNotExist = -2013,
+    InvalidResponse = -1234568,
 }
 
 impl Display for ErrorCode {
@@ -228,3 +271,22 @@ impl Display for ErrorResponse {
 }
 
 impl std::error::Error for ErrorResponse {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_error_parameter_error() {
+        let json = r#"
+            {"code":"730002","msg":"Parameter error"}
+        "#;
+        let response = serde_json::from_str::<ApiResponse<()>>(json).unwrap();
+        eprintln!("{:#?}", response);
+        let result = response.into_result();
+        eprintln!("{:#?}", &result);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.code, ErrorCode::YourInputParamIsInvalidOrParameterError);
+    }
+}
