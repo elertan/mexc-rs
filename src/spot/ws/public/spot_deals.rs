@@ -23,12 +23,15 @@ pub enum ChannelMessageToSpotDealsMessageError {
 }
 
 pub(crate) fn channel_message_to_spot_deals_message(channel_message: &PublicChannelMessage) -> Result<SpotDealsMessage, ChannelMessageToSpotDealsMessageError> {
+    let Some(symbol) = &channel_message.symbol else {
+        return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
+    };
     let Some(deals) = &channel_message.data.deals else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };
 
     let spot_deals = deals.iter().map(|deal| SpotDeal {
-        symbol: channel_message.symbol.clone(),
+        symbol: symbol.clone(),
         price: deal.price.clone(),
         quantity: deal.quantity.clone(),
         timestamp: deal.timestamp.clone(),

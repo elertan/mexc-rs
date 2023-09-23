@@ -1,9 +1,8 @@
 use futures::StreamExt;
-use mexc_rs::spot::ws::public::subscription::{
-    PublicSpotDealsSubscriptionTopic, PublicSubscribe, PublicSubscribeParams, PublicSubscriptionTopic,
-};
+use mexc_rs::spot::ws::public::subscription::{PublicSpotDealsSubscriptionTopic, PublicSpotKlineSubscriptionTopic, PublicSubscribe, PublicSubscribeParams, PublicSubscriptionTopic};
 use mexc_rs::spot::ws::public::{MexcSpotPublicWsClient, PublicMexcSpotWsMessage};
 use tracing_subscriber::util::SubscriberInitExt;
+use mexc_rs::spot::ws::public::kline::KlineIntervalSubscription;
 
 #[tokio::main]
 async fn main() {
@@ -18,6 +17,10 @@ async fn main() {
             }),
             PublicSubscriptionTopic::SpotDeals(PublicSpotDealsSubscriptionTopic {
                 symbol: "KASUSDT".to_string(),
+            }),
+            PublicSubscriptionTopic::SpotKline(PublicSpotKlineSubscriptionTopic {
+                symbol: "KASUSDT".to_string(),
+                interval: KlineIntervalSubscription::OneMinute,
             }),
         ],
         wait_for_confirmation: None,
@@ -41,6 +44,15 @@ async fn main() {
                     )
                 }
             }
+            PublicMexcSpotWsMessage::SpotKline(spot_kline_message) => {
+                tracing::info!(
+                    "Spot kline for '{}' with closing price {} at {}",
+                    spot_kline_message.symbol,
+                    spot_kline_message.close,
+                    spot_kline_message.start_time.format("%a %b %e %T %Y")
+                );
+            }
+            _ => {}
         }
     }
 }

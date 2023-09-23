@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 use crate::spot::ws::public::{AcquireWebsocketError, PublicClientMessagePayload, MexcSpotPublicWsClient, PublicRawMexcSpotWsMessage};
+use crate::spot::ws::public::kline::KlineIntervalSubscription;
 
 #[derive(Debug)]
 pub struct PublicSubscribeParams {
@@ -16,6 +17,7 @@ pub struct PublicSubscribeParams {
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum PublicSubscriptionTopic {
     SpotDeals(PublicSpotDealsSubscriptionTopic),
+    SpotKline(PublicSpotKlineSubscriptionTopic),
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -23,10 +25,17 @@ pub struct PublicSpotDealsSubscriptionTopic {
     pub symbol: String,
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct PublicSpotKlineSubscriptionTopic {
+    pub symbol: String,
+    pub interval: KlineIntervalSubscription,
+}
+
 impl PublicSubscriptionTopic {
     pub fn to_subscription_param(&self) -> String {
         match self {
-            PublicSubscriptionTopic::SpotDeals(spot_deals_sr) => format!("spot@public.deals.v3.api@{}", spot_deals_sr.symbol)
+            PublicSubscriptionTopic::SpotDeals(spot_deals_sr) => format!("spot@public.deals.v3.api@{}", spot_deals_sr.symbol),
+            PublicSubscriptionTopic::SpotKline(spot_kline_sr) => format!("spot@public.kline.v3.api@{}@{}", spot_kline_sr.symbol, spot_kline_sr.interval.as_ref()),
         }
     }
 }

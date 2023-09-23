@@ -9,11 +9,13 @@ use chrono::{DateTime, Utc};
 use futures::{SinkExt, StreamExt};
 use tokio_util::sync::CancellationToken;
 use crate::spot::ws::MexcSpotWsEndpoint;
+use crate::spot::ws::public::kline::{channel_message_to_spot_kline_message, KlineIntervalSubscription, SpotKlineMessage};
 use crate::spot::ws::public::spot_deals::{channel_message_to_spot_deals_message, SpotDealsMessage};
 use crate::spot::ws::public::subscription::PublicSubscriptionTopic;
 
 pub mod subscription;
 pub mod spot_deals;
+pub mod kline;
 
 struct MexcSpotPublicWsClientInner {
     subscriptions: HashSet<PublicSubscriptionTopic>,
@@ -223,7 +225,7 @@ async fn ws_message_receiver(message_opt: Option<Result<Message, tokio_tungsteni
     let raw_mexc_ws_message = match serde_json::from_str::<PublicRawMexcSpotWsMessage>(&text) {
         Ok(raw_mexc_ws_message) => Arc::new(raw_mexc_ws_message),
         Err(err) => {
-            tracing::error!("Failed to parse mexc ws message: {:?}", err);
+            tracing::error!("Failed to parse mexc ws message: {:?}\n\nmessage:\n{}", err, &text);
             return ControlFlow::Break(());
         }
     };
@@ -236,6 +238,15 @@ async fn ws_message_receiver(message_opt: Option<Result<Message, tokio_tungsteni
                     Ok(spot_deals_message) => Some(Arc::new(PublicMexcSpotWsMessage::SpotDeals(spot_deals_message))),
                     Err(err) => {
                         tracing::error!("Failed to convert channel message to spot deals message: {:?}", err);
+                        return ControlFlow::Break(());
+                    }
+                }
+            } else if channel.starts_with("spot@public.kline.v3.api@") {
+                let result = channel_message_to_spot_kline_message(channel_message);
+                match result {
+                    Ok(spot_kline_message) => Some(Arc::new(PublicMexcSpotWsMessage::SpotKline(spot_kline_message))),
+                    Err(err) => {
+                        tracing::error!("Failed to convert channel message to spot kline message: {:?}", err);
                         return ControlFlow::Break(());
                     }
                 }
@@ -302,6 +313,7 @@ pub struct PublicClientMessagePayload<'a, T> {
 #[derive(Debug)]
 pub enum PublicMexcSpotWsMessage {
     SpotDeals(SpotDealsMessage),
+    SpotKline(SpotKlineMessage),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -316,7 +328,7 @@ pub(crate) struct PublicChannelMessage {
     #[serde(rename = "c")]
     pub channel: String,
     #[serde(rename = "s")]
-    pub symbol: String,
+    pub symbol: Option<String>,
     #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
     pub timestamp: DateTime<Utc>,
     #[serde(rename = "d")]
@@ -327,6 +339,7 @@ pub(crate) struct PublicChannelMessage {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PublicChannelMessageData {
     pub deals: Option<Vec<PublicChannelMessageDeal>>,
+    pub k: Option<PublicChannelMessageKline>,
     #[serde(rename = "e")]
     pub event_type: String,
 }
@@ -342,4 +355,56 @@ pub(crate) struct PublicChannelMessageDeal {
     pub timestamp: DateTime<Utc>,
     #[serde(rename = "S")]
     pub trade_type: i32,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PublicChannelMessageKline {
+    #[serde(rename = "T", with = "chrono::serde::ts_seconds")]
+    pub T: DateTime<Utc>,
+    pub a: Decimal,
+    pub c: Decimal,
+    pub h: Decimal,
+    pub l: Decimal,
+    pub o: Decimal,
+    pub i: KlineIntervalSubscription,
+    #[serde(rename = "t", with = "chrono::serde::ts_seconds")]
+    pub t: DateTime<Utc>,
+    pub v: Decimal,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_raw_kline_message() {
+        let data = r#"{"d":{"e":"spot@public.kline.v3.api","k":{"t":1695489360,"o":"0.0458","c":"0.045799","h":"0.0458","l":"0.045799","v":"696.3","a":"31.890278","T":1695489420,"i":"Min1"}},"c":"spot@public.kline.v3.api@KASUSDT@Min1","t":1695489377857,"s":"KASUSDT"}"#;
+        // let message = serde_json::from_str::<PublicRawMexcSpotWsMessage>(data).unwrap();
+
+        // Some Deserializer.
+        let jd = &mut serde_json::Deserializer::from_str(data);
+
+        let result: Result<PublicRawMexcSpotWsMessage, _> = serde_path_to_error::deserialize(jd);
+        if let Err(err) = &result {
+            eprintln!("err: {:?}", err);
+        }
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn deserialize_raw_kline_message_x() {
+        let data = r#"{"t":1695489360,"o":"0.0458","c":"0.045799","h":"0.0458","l":"0.045799","v":"696.3","a":"31.890278","T":1695489420,"i":"Min1"}"#;
+        // let message = serde_json::from_str::<PublicRawMexcSpotWsMessage>(data).unwrap();
+
+        // Some Deserializer.
+        let jd = &mut serde_json::Deserializer::from_str(data);
+
+        let result: Result<PublicChannelMessageKline, _> = serde_path_to_error::deserialize(jd);
+        if let Err(err) = &result {
+            eprintln!("err: {:?}", err);
+        }
+        assert!(result.is_ok());
+    }
 }
