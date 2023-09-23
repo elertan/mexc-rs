@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    std::env::set_var("RUST_LOG", "mexc_rs=trace,spot_create_order=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=debug,spot_create_order=trace");
     tracing_subscriber::fmt::init();
 
     dotenv().ok();

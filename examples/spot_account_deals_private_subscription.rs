@@ -8,7 +8,7 @@ use mexc_rs::spot::ws::private::subscription::{PrivateSubscriptionRequest, Priva
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "mexc_rs=trace,spot_simple_private_subscription=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=debug,spot_account_deals_private_subscription=trace");
     tracing_subscriber::fmt::init();
 
     dotenv().ok();

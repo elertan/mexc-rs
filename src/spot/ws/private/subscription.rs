@@ -17,6 +17,7 @@ pub struct PrivateSubscribeParams {
 pub enum PrivateSubscriptionRequest {
     AccountUpdate,
     AccountDeals,
+    AccountOrders,
 }
 
 impl PrivateSubscriptionRequest {
@@ -24,6 +25,7 @@ impl PrivateSubscriptionRequest {
         match self {
             PrivateSubscriptionRequest::AccountUpdate => "spot@private.account.v3.api".to_string(),
             PrivateSubscriptionRequest::AccountDeals => "spot@private.deals.v3.api".to_string(),
+            PrivateSubscriptionRequest::AccountOrders => "spot@private.orders.v3.api".to_string(),
         }
     }
 }

@@ -8,7 +8,7 @@ use mexc_rs::spot::ws::private::subscription::{PrivateSubscriptionRequest, Priva
 
 #[tokio::main]
 async fn main() {
-    std::env::set_var("RUST_LOG", "mexc_rs=debug,spot_simple_private_subscription=trace");
+    std::env::set_var("RUST_LOG", "mexc_rs=debug,spot_account_orders_private_subscription=trace");
     tracing_subscriber::fmt::init();
 
     dotenv().ok();
@@ -20,7 +20,8 @@ async fn main() {
     let private_ws_client = MexcSpotPrivateWsClient::new(MexcSpotWsEndpoint::Base, client);
     let subscribe_params = PrivateSubscribeParams {
         subscription_requests: vec![
-            PrivateSubscriptionRequest::AccountUpdate,
+            PrivateSubscriptionRequest::AccountDeals,
+            PrivateSubscriptionRequest::AccountOrders,
         ],
         wait_for_confirmation: None,
     };
@@ -32,8 +33,11 @@ async fn main() {
     let mut stream = private_ws_client.stream();
     while let Some(message) = stream.next().await {
         match message.as_ref() {
-            PrivateMexcSpotWsMessage::AccountUpdate(account_update_message) => {
-                tracing::info!("Account update: {:#?}", account_update_message);
+            PrivateMexcSpotWsMessage::AccountDeals(account_deals) => {
+                tracing::info!("Account deals: {:#?}", account_deals);
+            }
+            PrivateMexcSpotWsMessage::AccountOrders(account_orders) => {
+                tracing::info!("Account orders: {:#?}", account_orders);
             }
             _ => {},
         }

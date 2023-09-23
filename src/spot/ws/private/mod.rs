@@ -14,11 +14,13 @@ use crate::spot::v3::enums::ChangedType;
 use crate::spot::v3::keep_alive_user_data_stream::{KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams};
 use crate::spot::ws::MexcSpotWsEndpoint;
 use crate::spot::ws::private::account_deals::channel_message_to_account_deals_message;
+use crate::spot::ws::private::account_orders::channel_message_to_account_orders_message;
 use crate::spot::ws::private::account_update::channel_message_to_account_update_message;
 
 pub mod subscription;
 pub mod account_update;
 pub mod account_deals;
+pub mod account_orders;
 
 struct MexcSpotPrivateWsClientInner {
     message_sink_tx: Option<async_channel::Sender<Message>>,
@@ -203,7 +205,7 @@ impl MexcSpotPrivateWsClient {
         let mut mr = self.ws_raw_message_rx.clone();
         let stream = async_stream::stream! {
             while let Ok(message) = mr.recv().await {
-                tracing::debug!("Received raw mexc ws message: {:?}", &message);
+                tracing::trace!("Received raw mexc ws message: {:?}", &message);
                 yield message;
             }
         };
@@ -242,7 +244,7 @@ async fn ws_message_receiver(message_opt: Option<Result<Message, tokio_tungsteni
     let raw_mexc_ws_message = match serde_json::from_str::<PrivateRawMexcSpotWsMessage>(&text) {
         Ok(raw_mexc_ws_message) => Arc::new(raw_mexc_ws_message),
         Err(err) => {
-            tracing::error!("Failed to parse mexc ws message: {:?}", err);
+            tracing::error!("Failed to parse mexc ws message: {:?}\n\nmessage:\n{}", err, &text);
             return ControlFlow::Break(());
         }
     };
@@ -264,6 +266,15 @@ async fn ws_message_receiver(message_opt: Option<Result<Message, tokio_tungsteni
                     Ok(account_deals_message) => Some(Arc::new(PrivateMexcSpotWsMessage::AccountDeals(account_deals_message))),
                     Err(err) => {
                         tracing::error!("Failed to convert channel message to account deals message: {:?}", err);
+                        return ControlFlow::Break(());
+                    }
+                }
+            } else if channel == "spot@private.orders.v3.api" {
+                let result = channel_message_to_account_orders_message(channel_message);
+                match result {
+                    Ok(account_orders_message) => Some(Arc::new(PrivateMexcSpotWsMessage::AccountOrders(account_orders_message))),
+                    Err(err) => {
+                        tracing::error!("Failed to convert channel message to account orders message: {:?}", err);
                         return ControlFlow::Break(());
                     }
                 }
@@ -328,6 +339,7 @@ pub struct PrivateClientMessagePayload<'a, T> {
 pub enum PrivateMexcSpotWsMessage {
     AccountUpdate(account_update::AccountUpdateMessage),
     AccountDeals(account_deals::AccountDealsMessage),
+    AccountOrders(account_orders::AccountOrdersMessage),
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -353,9 +365,11 @@ pub(crate) struct PrivateChannelMessage {
 #[serde(untagged)]
 pub(crate) enum PrivateChannelMessageData {
     AccountUpdate(AccountUpdateRawChannelMessageData),
-    AccountDeals(AccountDealsRawChannelMessageData)
+    AccountDeals(AccountDealsRawChannelMessageData),
+    AccountOrders(AccountOrdersRawChannelMessageData),
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, serde::Deserialize)]
 pub(crate) struct AccountUpdateRawChannelMessageData {
     pub a: String,
@@ -368,6 +382,7 @@ pub(crate) struct AccountUpdateRawChannelMessageData {
     pub o: ChangedType,
 }
 
+#[allow(non_snake_case)]
 #[derive(Debug, serde::Deserialize)]
 pub(crate) struct AccountDealsRawChannelMessageData {
     pub S: u8,
@@ -383,4 +398,60 @@ pub(crate) struct AccountDealsRawChannelMessageData {
     pub a: Decimal,
     pub n: Decimal,
     pub N: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(untagged)]
+pub(crate) enum AccountOrdersRawChannelMessageData {
+    LimitOrMarket(LimitOrMarketAccountOrdersRawChannelMessageData),
+    StopLimit(StopLimitAccountOrdersRawChannelMessageData),
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, serde::Deserialize)]
+pub(crate) struct LimitOrMarketAccountOrdersRawChannelMessageData {
+    pub A: Decimal,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub O: DateTime<Utc>,
+    pub S: u8,
+    pub V: Decimal,
+    pub a: Decimal,
+    pub c: String,
+    pub i: String,
+    pub m: u8,
+    pub o: u8,
+    pub p: Decimal,
+    pub s: u8,
+    pub v: Decimal,
+    pub ap: Decimal,
+    pub cv: Decimal,
+    pub ca: Decimal,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, serde::Deserialize)]
+pub(crate) struct StopLimitAccountOrdersRawChannelMessageData {
+    pub N: String,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub O: DateTime<Utc>,
+    pub P: Decimal,
+    pub S: u8,
+    pub T: u8,
+    pub i: String,
+    pub o: u8,
+    pub p: Decimal,
+    pub s: u8,
+    pub v: Decimal,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_stop_limit_account_orders_raw_channel_message_data() {
+        let data = r#"{"N":"USDT","O":1695479061934,"P":"0.04","S":1,"T":1,"i":"C01__334272716368543745","o":100,"p":"0.04565","s":0,"v":"160.94"}"#;
+        let result = serde_json::from_str::<AccountOrdersRawChannelMessageData>(data);
+        assert!(result.is_ok());
+    }
 }

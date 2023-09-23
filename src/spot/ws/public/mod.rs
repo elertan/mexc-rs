@@ -160,7 +160,7 @@ impl MexcSpotPublicWsClient {
         let mut mr = self.ws_raw_message_rx.clone();
         let stream = async_stream::stream! {
             while let Ok(message) = mr.recv().await {
-                tracing::debug!("Received raw mexc ws message: {:?}", &message);
+                tracing::trace!("Received raw mexc ws message: {:?}", &message);
                 yield message;
             }
         };
