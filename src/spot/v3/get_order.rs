@@ -1,9 +1,8 @@
 use async_trait::async_trait;
-use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 use crate::spot::MexcSpotApiClientWithAuthentication;
 use crate::spot::v3::{ApiResponse, ApiResult};
-use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::v3::models::Order;
 
 #[derive(Debug)]
 pub struct GetOrderParams<'a> {
@@ -41,49 +40,21 @@ impl<'a> From<GetOrderParams<'a>> for GetOrderQuery<'a> {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetOrderOutput {
-    pub symbol: String,
-    pub order_id: String,
-    pub client_order_id: Option<String>,
-    pub price: Decimal,
-    #[serde(rename = "origQty")]
-    pub original_quantity: Decimal,
-    #[serde(rename = "executedQty")]
-    pub executed_quantity: Decimal,
-    #[serde(rename = "cummulativeQuoteQty")]
-    pub cummulative_quote_quantity: Decimal,
-    pub status: OrderStatus,
-    pub time_in_force: Option<String>,
-    #[serde(rename = "type")]
-    pub order_type: OrderType,
-    pub side: OrderSide,
-    pub stop_price: Decimal,
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub time: DateTime<Utc>,
-    #[serde(with = "chrono::serde::ts_milliseconds")]
-    pub update_time: DateTime<Utc>,
-    pub is_working: bool,
-    #[serde(rename = "origQuoteOrderQty")]
-    pub original_quote_order_qty: Decimal,
-}
-
 
 #[async_trait]
 pub trait GetOrderEndpoint {
-    async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<GetOrderOutput>;
+    async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<Order>;
 }
 
 #[async_trait]
 impl GetOrderEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<GetOrderOutput> {
+    async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<Order> {
         let endpoint = format!("{}/api/v3/order", self.endpoint.as_ref());
         let query = GetOrderQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
         let response = self.reqwest_client.get(&endpoint).query(&query_with_signature).send().await?;
-        let api_response = response.json::<ApiResponse<GetOrderOutput>>().await?;
+        let api_response = response.json::<ApiResponse<Order>>().await?;
         let output = api_response.into_api_result()?;
 
         Ok(output)

@@ -3,6 +3,7 @@ use num_traits::FromPrimitive;
 use reqwest::StatusCode;
 use crate::spot::SignQueryError;
 
+pub mod models;
 pub mod depth;
 pub mod enums;
 pub mod klines;
@@ -13,6 +14,7 @@ pub mod exchange_information;
 pub mod trades;
 pub mod order;
 pub mod get_order;
+pub mod get_open_orders;
 pub mod cancel_order;
 pub mod cancel_all_open_orders_on_a_symbol;
 pub mod account_information;
