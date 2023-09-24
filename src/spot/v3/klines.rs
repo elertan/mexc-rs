@@ -13,10 +13,10 @@ pub struct KlinesParams<'a> {
     /// Interval
     pub interval: KlineInterval,
     /// Start time
-    #[serde(with = "chrono::serde::ts_seconds_option")]
+    #[serde(with = "chrono::serde::ts_milliseconds_option")]
     pub start_time: Option<DateTime<Utc>>,
     /// End time
-    #[serde(with = "chrono::serde::ts_seconds_option")]
+    #[serde(with = "chrono::serde::ts_milliseconds_option")]
     pub end_time: Option<DateTime<Utc>>,
     /// default 500; max 1000
     pub limit: Option<u32>,
@@ -73,12 +73,12 @@ async fn klines_impl(
                 return Err(ApiError::UnableToParseResponse);
             };
 
-            let open_time_ts_seconds = entries
+            let open_time_ts_milliseconds = entries
                 .get(0)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_i64()
                 .ok_or(ApiError::UnableToParseResponse)?;
-            let open_time = Utc.timestamp_opt(open_time_ts_seconds, 0).unwrap();
+            let open_time = Utc.timestamp_millis_opt(open_time_ts_milliseconds).unwrap();
 
             let open = entries
                 .get(1)
@@ -135,12 +135,12 @@ async fn klines_impl(
                     ApiError::UnableToParseResponse
                 })?;
 
-            let close_time_ts_seconds = entries
+            let close_time_ts_milliseconds = entries
                 .get(6)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_i64()
                 .ok_or(ApiError::UnableToParseResponse)?;
-            let close_time = Utc.timestamp_opt(close_time_ts_seconds, 0).unwrap();
+            let close_time = Utc.timestamp_millis_opt(close_time_ts_milliseconds).unwrap();
 
             let quote_asset_volume = entries
                 .get(7)
@@ -189,6 +189,7 @@ impl KlinesEndpoint for MexcSpotApiClientWithAuthentication {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
     use super::*;
 
     #[tokio::test]
@@ -203,5 +204,37 @@ mod tests {
         };
         let result = client.klines(params).await;
         assert!(result.is_ok());
+    }
+
+
+    #[tokio::test]
+    async fn test_klines_with_time_range() {
+        let start_time = Utc.ymd(2023, 9, 1).and_hms(0, 0, 0);
+        let end_time = start_time + Duration::minutes(1000);
+        eprintln!("start_time: {}", start_time);
+        eprintln!("end_time: {}", end_time);
+
+        // BTCUSDT&interval=1m&startTime=1695560040000&endTime=1695560940000
+        // BTCUSDT&interval=1m&startTime=1598918400000&endTime=1598978400000
+
+        let client = MexcSpotApiClient::default();
+        let params = KlinesParams {
+            symbol: "BTCUSDT",
+            interval: KlineInterval::OneMinute,
+            start_time: Some(start_time),
+            end_time: Some(end_time),
+            limit: Some(1000),
+        };
+        let result = client.klines(params).await;
+        assert!(result.is_ok());
+
+        let output = result.unwrap();
+        eprintln!("len: {}", output.klines.len());
+
+        let first_kline = output.klines.first().unwrap();
+        eprintln!("first kline time: {}", first_kline.open_time);
+
+        let last_kline = output.klines.last().unwrap();
+        eprintln!("last kline time: {}", last_kline.close_time);
     }
 }
