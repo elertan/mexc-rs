@@ -39,12 +39,12 @@ pub struct GetOrderOutput {
 
 
 #[async_trait]
-pub trait GetOrderEndpoint {
+pub trait GetOpenOrdersEndpoint {
     async fn get_open_orders(&self, params: GetOpenOrdersParams<'_>) -> ApiResult<GetOrderOutput>;
 }
 
 #[async_trait]
-impl GetOrderEndpoint for MexcSpotApiClientWithAuthentication {
+impl GetOpenOrdersEndpoint for MexcSpotApiClientWithAuthentication {
     async fn get_open_orders(&self, params: GetOpenOrdersParams<'_>) -> ApiResult<GetOrderOutput> {
         let endpoint = format!("{}/api/v3/openOrders", self.endpoint.as_ref());
         let query = GetOrderQuery::from(params);
