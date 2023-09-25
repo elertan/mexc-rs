@@ -1,10 +1,14 @@
 use crate::spot::v3::create_user_data_stream::CreateUserDataStreamEndpoint;
+use crate::spot::v3::keep_alive_user_data_stream::{
+    KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams,
+};
 use crate::spot::v3::ApiError;
 use crate::spot::wsv2::auth::WebsocketAuth;
 use crate::spot::wsv2::endpoint::MexcWebsocketEndpoint;
 use crate::spot::wsv2::topic::Topic;
 use crate::spot::wsv2::{message, Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
 use crate::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use async_channel::Sender;
 use async_trait::async_trait;
 use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
@@ -13,6 +17,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::error::ProtocolError;
 use tokio_tungstenite::tungstenite::{Error, Message};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use tokio_util::sync::CancellationToken;
 
 #[derive(Debug)]
 pub(crate) struct AcquireWebsocketsForTopicsParams {
@@ -452,9 +457,18 @@ async fn create_private_websocket(
     let (ws_tx, mut ws_rx) = ws_stream.split();
     let (tx, rx) = async_channel::unbounded();
 
+    let cancellation_token = CancellationToken::new();
+
     // Spawn all necessary tasks for this websocket...
-    spawn_websocket_sender_task(this.clone(), ws_tx, rx);
-    spawn_websocket_receiver_task(this.clone(), ws_rx);
+    spawn_websocket_sender_task(this.clone(), ws_tx, rx, cancellation_token.clone());
+    spawn_websocket_receiver_task(this.clone(), ws_rx, cancellation_token.clone());
+    spawn_websocket_ping_task(this.clone(), tx.clone(), cancellation_token.clone());
+    spawn_websocket_keepalive_task(
+        this.clone(),
+        spot_client_with_auth,
+        user_data_stream_output.listen_key.clone(),
+        cancellation_token.clone(),
+    );
 
     inner
         .auth_to_listen_key_map
@@ -469,7 +483,6 @@ async fn create_private_websocket(
     };
     let websocket_entry = Arc::new(websocket_entry);
     inner.websockets.push(websocket_entry.clone());
-
     Ok(websocket_entry)
 }
 
@@ -486,12 +499,15 @@ async fn create_public_websocket(
     let endpoint_str = this.ws_endpoint.to_string();
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(&endpoint_str).await?;
-    let (ws_tx, mut ws_rx) = ws_stream.split();
+    let (ws_tx, ws_rx) = ws_stream.split();
     let (tx, rx) = async_channel::unbounded();
 
+    let cancellation_token = CancellationToken::new();
+
     // Spawn all necessary tasks for this websocket...
-    spawn_websocket_sender_task(this.clone(), ws_tx, rx);
-    spawn_websocket_receiver_task(this.clone(), ws_rx);
+    spawn_websocket_sender_task(this.clone(), ws_tx, rx, cancellation_token.clone());
+    spawn_websocket_receiver_task(this.clone(), ws_rx, cancellation_token.clone());
+    spawn_websocket_ping_task(this.clone(), tx.clone(), cancellation_token.clone());
 
     let websocket_entry = WebsocketEntry {
         id: uuid::Uuid::new_v4(),
@@ -510,6 +526,7 @@ fn spawn_websocket_sender_task(
     this: Arc<MexcSpotWebsocketClient>,
     mut ws_tx: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     rx: async_channel::Receiver<SendableMessage>,
+    cancellation_token: CancellationToken,
 ) {
     tokio::spawn(async move {
         while let Ok(message) = rx.recv().await {
@@ -520,16 +537,20 @@ fn spawn_websocket_sender_task(
                 Ok(_) => {}
                 Err(err) => match err {
                     Error::ConnectionClosed => {
+                        cancellation_token.cancel();
                         todo!()
                     }
                     Error::AlreadyClosed => {
+                        cancellation_token.cancel();
                         todo!()
                     }
                     Error::Protocol(protocol_err) => match protocol_err {
                         ProtocolError::ResetWithoutClosingHandshake => {
+                            cancellation_token.cancel();
                             todo!()
                         }
                         _ => {
+                            cancellation_token.cancel();
                             tracing::error!(
                                 "Protocol error sending message to websocket: {}",
                                 protocol_err
@@ -538,6 +559,7 @@ fn spawn_websocket_sender_task(
                         }
                     },
                     _ => {
+                        cancellation_token.cancel();
                         tracing::error!("Error sending message to websocket: {}", err);
                         break;
                     }
@@ -550,6 +572,7 @@ fn spawn_websocket_sender_task(
 fn spawn_websocket_receiver_task(
     this: Arc<MexcSpotWebsocketClient>,
     mut ws_rx: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    cancellation_token: CancellationToken,
 ) {
     let broadcast_tx = this.broadcast_tx.clone();
     tokio::spawn(async move {
@@ -558,16 +581,20 @@ fn spawn_websocket_receiver_task(
                 Ok(message) => message,
                 Err(err) => match err {
                     Error::ConnectionClosed => {
+                        cancellation_token.cancel();
                         todo!()
                     }
                     Error::AlreadyClosed => {
+                        cancellation_token.cancel();
                         todo!()
                     }
                     Error::Protocol(protocol_err) => match protocol_err {
                         ProtocolError::ResetWithoutClosingHandshake => {
+                            cancellation_token.cancel();
                             todo!()
                         }
                         _ => {
+                            cancellation_token.cancel();
                             tracing::error!(
                                 "Protocol error receiving message from websocket: {}",
                                 protocol_err
@@ -576,6 +603,7 @@ fn spawn_websocket_receiver_task(
                         }
                     },
                     _ => {
+                        cancellation_token.cancel();
                         tracing::error!("Error receiving message from websocket: {}", err);
                         break;
                     }
@@ -593,6 +621,7 @@ fn spawn_websocket_receiver_task(
             let mexc_message = match serde_json::from_str::<message::Message>(&text) {
                 Ok(x) => x,
                 Err(err) => {
+                    cancellation_token.cancel();
                     tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
                     break;
                 }
@@ -601,7 +630,54 @@ fn spawn_websocket_receiver_task(
             match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
                 Ok(_) => {}
                 Err(err) => {
+                    cancellation_token.cancel();
                     tracing::error!("Failed to broadcast message: {}", err);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+fn spawn_websocket_ping_task(
+    this: Arc<MexcSpotWebsocketClient>,
+    sender: Sender<SendableMessage>,
+    cancellation_token: CancellationToken,
+) {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            match sender.send(SendableMessage::Ping).await {
+                Ok(_) => {}
+                Err(err) => {
+                    cancellation_token.cancel();
+                    tracing::error!("Failed to send ping: {}", err);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+fn spawn_websocket_keepalive_task(
+    this: Arc<MexcSpotWebsocketClient>,
+    spot_client_with_auth: MexcSpotApiClientWithAuthentication,
+    listen_key: String,
+    cancellation_token: CancellationToken,
+) {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(60 * 30)).await;
+            match spot_client_with_auth
+                .keep_alive_user_data_stream(KeepAliveUserDataStreamParams {
+                    listen_key: &listen_key,
+                })
+                .await
+            {
+                Ok(_) => {}
+                Err(err) => {
+                    cancellation_token.cancel();
+                    tracing::error!("Failed to keep alive user data stream: {}", err);
                     break;
                 }
             }
