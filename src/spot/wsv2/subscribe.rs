@@ -140,6 +140,6 @@ impl Subscribe for MexcSpotWebsocketClient {
                 .await?;
         }
 
-        todo!()
+        Ok(SubscribeOutput {})
     }
 }

@@ -453,6 +453,7 @@ async fn create_private_websocket(
     let (tx, rx) = async_channel::unbounded();
 
     // Spawn all necessary tasks for this websocket...
+    spawn_websocket_sender_task(this.clone(), ws_tx, rx);
 
     inner
         .auth_to_listen_key_map

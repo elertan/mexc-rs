@@ -5,7 +5,6 @@ use crate::spot::MexcSpotApiEndpoint;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
 pub mod acquire_websocket;
@@ -50,6 +49,10 @@ impl MexcSpotWebsocketClient {
                 websockets: Vec::new(),
             })),
         }
+    }
+
+    pub fn into_arc(self) -> Arc<Self> {
+        Arc::new(self)
     }
 }
 
