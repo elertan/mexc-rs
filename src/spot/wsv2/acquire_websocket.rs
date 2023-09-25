@@ -528,41 +528,56 @@ fn spawn_websocket_sender_task(
     cancellation_token: CancellationToken,
 ) {
     tokio::spawn(async move {
-        while let Ok(message) = rx.recv().await {
-            let json = serde_json::to_string(&message).expect("Failed to serialize message");
-            let message = Message::Text(json);
-
-            match ws_tx.send(message).await {
-                Ok(_) => {}
-                Err(err) => match err {
-                    Error::ConnectionClosed => {
-                        cancellation_token.cancel();
-                        todo!()
-                    }
-                    Error::AlreadyClosed => {
-                        cancellation_token.cancel();
-                        todo!()
-                    }
-                    Error::Protocol(protocol_err) => match protocol_err {
-                        ProtocolError::ResetWithoutClosingHandshake => {
+        loop {
+            tokio::select! {
+                _ = cancellation_token.cancelled() => {
+                    break;
+                }
+                message_result = rx.recv() => {
+                    let message = match message_result {
+                        Ok(x) => x,
+                        Err(err) => {
                             cancellation_token.cancel();
-                            todo!()
-                        }
-                        _ => {
-                            cancellation_token.cancel();
-                            tracing::error!(
-                                "Protocol error sending message to websocket: {}",
-                                protocol_err
-                            );
+                            tracing::error!("Error receiving message from channel: {}", err);
                             break;
                         }
-                    },
-                    _ => {
-                        cancellation_token.cancel();
-                        tracing::error!("Error sending message to websocket: {}", err);
-                        break;
+                    };
+                    let json = serde_json::to_string(&message).expect("Failed to serialize message");
+                    let message = Message::Text(json);
+
+                    match ws_tx.send(message).await {
+                        Ok(_) => {}
+                        Err(err) => match err {
+                            Error::ConnectionClosed => {
+                                cancellation_token.cancel();
+                                todo!()
+                            }
+                            Error::AlreadyClosed => {
+                                cancellation_token.cancel();
+                                todo!()
+                            }
+                            Error::Protocol(protocol_err) => match protocol_err {
+                                ProtocolError::ResetWithoutClosingHandshake => {
+                                    cancellation_token.cancel();
+                                    todo!()
+                                }
+                                _ => {
+                                    cancellation_token.cancel();
+                                    tracing::error!(
+                                        "Protocol error sending message to websocket: {}",
+                                        protocol_err
+                                    );
+                                    break;
+                                }
+                            },
+                            _ => {
+                                cancellation_token.cancel();
+                                tracing::error!("Error sending message to websocket: {}", err);
+                                break;
+                            }
+                        },
                     }
-                },
+                }
             }
         }
     });
@@ -575,63 +590,77 @@ fn spawn_websocket_receiver_task(
 ) {
     let broadcast_tx = this.broadcast_tx.clone();
     tokio::spawn(async move {
-        while let Some(message_result) = ws_rx.next().await {
-            let message = match message_result {
-                Ok(message) => message,
-                Err(err) => match err {
-                    Error::ConnectionClosed => {
-                        cancellation_token.cancel();
-                        todo!()
-                    }
-                    Error::AlreadyClosed => {
-                        cancellation_token.cancel();
-                        todo!()
-                    }
-                    Error::Protocol(protocol_err) => match protocol_err {
-                        ProtocolError::ResetWithoutClosingHandshake => {
+        loop {
+            tokio::select! {
+                _ = cancellation_token.cancelled() => {
+                    break;
+                }
+                message_result_opt = ws_rx.next() => {
+                    let message_result = match message_result_opt {
+                        Some(x) => x,
+                        None => {
                             cancellation_token.cancel();
-                            todo!()
-                        }
-                        _ => {
-                            cancellation_token.cancel();
-                            tracing::error!(
-                                "Protocol error receiving message from websocket: {}",
-                                protocol_err
-                            );
                             break;
                         }
-                    },
-                    _ => {
-                        cancellation_token.cancel();
-                        tracing::error!("Error receiving message from websocket: {}", err);
-                        break;
+                    };
+                    let message = match message_result {
+                        Ok(message) => message,
+                        Err(err) => match err {
+                            Error::ConnectionClosed => {
+                                cancellation_token.cancel();
+                                todo!()
+                            }
+                            Error::AlreadyClosed => {
+                                cancellation_token.cancel();
+                                todo!()
+                            }
+                            Error::Protocol(protocol_err) => match protocol_err {
+                                ProtocolError::ResetWithoutClosingHandshake => {
+                                    cancellation_token.cancel();
+                                    todo!()
+                                }
+                                _ => {
+                                    cancellation_token.cancel();
+                                    tracing::error!(
+                                        "Protocol error receiving message from websocket: {}",
+                                        protocol_err
+                                    );
+                                    break;
+                                }
+                            },
+                            _ => {
+                                cancellation_token.cancel();
+                                tracing::error!("Error receiving message from websocket: {}", err);
+                                break;
+                            }
+                        },
+                    };
+
+                    let text = match message {
+                        Message::Text(text) => text,
+                        _ => {
+                            tracing::debug!("Received non-text message: {:?}", message);
+                            continue;
+                        }
+                    };
+
+                    let mexc_message = match serde_json::from_str::<message::Message>(&text) {
+                        Ok(x) => x,
+                        Err(err) => {
+                            cancellation_token.cancel();
+                            tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
+                            break;
+                        }
+                    };
+
+                    match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
+                        Ok(_) => {}
+                        Err(err) => {
+                            cancellation_token.cancel();
+                            tracing::error!("Failed to broadcast message: {}", err);
+                            break;
+                        }
                     }
-                },
-            };
-
-            let text = match message {
-                Message::Text(text) => text,
-                _ => {
-                    tracing::debug!("Received non-text message: {:?}", message);
-                    continue;
-                }
-            };
-
-            let mexc_message = match serde_json::from_str::<message::Message>(&text) {
-                Ok(x) => x,
-                Err(err) => {
-                    cancellation_token.cancel();
-                    tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
-                    break;
-                }
-            };
-
-            match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
-                Ok(_) => {}
-                Err(err) => {
-                    cancellation_token.cancel();
-                    tracing::error!("Failed to broadcast message: {}", err);
-                    break;
                 }
             }
         }
@@ -645,13 +674,19 @@ fn spawn_websocket_ping_task(
 ) {
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-            match sender.send(SendableMessage::Ping).await {
-                Ok(_) => {}
-                Err(err) => {
-                    cancellation_token.cancel();
-                    tracing::error!("Failed to send ping: {}", err);
+            tokio::select! {
+                _ = cancellation_token.cancelled() => {
                     break;
+                }
+                _ = tokio::time::sleep(std::time::Duration::from_secs(30)) => {
+                    match sender.send(SendableMessage::Ping).await {
+                        Ok(_) => {}
+                        Err(err) => {
+                            cancellation_token.cancel();
+                            tracing::error!("Failed to send ping: {}", err);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -666,18 +701,24 @@ fn spawn_websocket_keepalive_task(
 ) {
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(60 * 30)).await;
-            match spot_client_with_auth
-                .keep_alive_user_data_stream(KeepAliveUserDataStreamParams {
-                    listen_key: &listen_key,
-                })
-                .await
-            {
-                Ok(_) => {}
-                Err(err) => {
-                    cancellation_token.cancel();
-                    tracing::error!("Failed to keep alive user data stream: {}", err);
+            tokio::select! {
+                _ = cancellation_token.cancelled() => {
                     break;
+                }
+                _ = tokio::time::sleep(std::time::Duration::from_secs(60 * 30)) => {
+                    match spot_client_with_auth
+                        .keep_alive_user_data_stream(KeepAliveUserDataStreamParams {
+                            listen_key: &listen_key,
+                        })
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(err) => {
+                            cancellation_token.cancel();
+                            tracing::error!("Failed to keep alive user data stream: {}", err);
+                            break;
+                        }
+                    }
                 }
             }
         }
