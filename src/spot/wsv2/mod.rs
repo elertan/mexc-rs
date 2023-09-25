@@ -29,13 +29,13 @@ struct Inner {
 }
 
 #[derive(Debug, Clone)]
-pub struct MexcWebsocketClient {
+pub struct MexcSpotWebsocketClient {
     ws_endpoint: Arc<MexcWebsocketEndpoint>,
     spot_api_endpoint: Arc<MexcSpotApiEndpoint>,
     inner: Arc<RwLock<Inner>>,
 }
 
-impl MexcWebsocketClient {
+impl MexcSpotWebsocketClient {
     pub fn new_with_endpoints(
         ws_endpoint: MexcWebsocketEndpoint,
         spot_api_endpoint: MexcSpotApiEndpoint,
@@ -51,7 +51,7 @@ impl MexcWebsocketClient {
     }
 }
 
-impl Default for MexcWebsocketClient {
+impl Default for MexcSpotWebsocketClient {
     fn default() -> Self {
         Self::new_with_endpoints(MexcWebsocketEndpoint::Base, MexcSpotApiEndpoint::Base)
     }

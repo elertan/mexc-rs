@@ -1,9 +1,13 @@
-use std::sync::Arc;
-use async_trait::async_trait;
-use crate::spot::wsv2::acquire_websocket::{AcquireWebsocketsForTopics, AcquireWebsocketForTopicsError, AcquireWebsocketsForTopicsOutput, AcquireWebsocketsForTopicsParams};
+use crate::spot::v3::ApiError;
+use crate::spot::wsv2::acquire_websocket::{
+    AcquireWebsocketForTopicsError, AcquireWebsocketsForTopics, AcquireWebsocketsForTopicsOutput,
+    AcquireWebsocketsForTopicsParams,
+};
 use crate::spot::wsv2::auth::WebsocketAuth;
-use crate::spot::wsv2::MexcWebsocketClient;
 use crate::spot::wsv2::topic::Topic;
+use crate::spot::wsv2::MexcSpotWebsocketClient;
+use async_trait::async_trait;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct SubscribeParams {
@@ -19,7 +23,11 @@ impl Default for SubscribeParams {
 }
 
 impl SubscribeParams {
-    pub fn new(auth: Option<WebsocketAuth>, topics: Vec<Topic>, wait_for_confirmation: bool) -> Self {
+    pub fn new(
+        auth: Option<WebsocketAuth>,
+        topics: Vec<Topic>,
+        wait_for_confirmation: bool,
+    ) -> Self {
         Self {
             auth,
             topics,
@@ -63,22 +71,37 @@ pub enum SubscribeError {
 
     #[error("Requested topics require authentication")]
     RequestedTopicsRequireAuthentication,
+
+    #[error("Tungestenite error: {0}")]
+    TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+
+    #[error("Could not create datastream (listen key)")]
+    CouldNotCreateDataStream(#[from] ApiError),
 }
 
 #[async_trait]
 pub trait Subscribe {
-    async fn subscribe(self: Arc<Self>, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError>;
+    async fn subscribe(
+        self: Arc<Self>,
+        params: SubscribeParams,
+    ) -> Result<SubscribeOutput, SubscribeError>;
 }
 
 #[async_trait]
-impl Subscribe for MexcWebsocketClient {
-    async fn subscribe(self: Arc<Self>, params: SubscribeParams) -> Result<SubscribeOutput, SubscribeError> {
-        let mut acquire_websocket_params = AcquireWebsocketsForTopicsParams::default()
-            .for_topics(params.topics);
+impl Subscribe for MexcSpotWebsocketClient {
+    async fn subscribe(
+        self: Arc<Self>,
+        params: SubscribeParams,
+    ) -> Result<SubscribeOutput, SubscribeError> {
+        let mut acquire_websocket_params =
+            AcquireWebsocketsForTopicsParams::default().for_topics(params.topics);
         if let Some(auth) = params.auth {
             acquire_websocket_params = acquire_websocket_params.with_auth(auth);
         }
-        let acquire_output = match self.acquire_websockets_for_topics(acquire_websocket_params).await {
+        let acquire_output = match self
+            .acquire_websockets_for_topics(acquire_websocket_params)
+            .await
+        {
             Ok(x) => x,
             Err(err) => match err {
                 AcquireWebsocketForTopicsError::MaximumAmountOfTopicsForUserWillBeExceeded => {
@@ -87,7 +110,13 @@ impl Subscribe for MexcWebsocketClient {
                 AcquireWebsocketForTopicsError::RequestedTopicsRequireAuthentication => {
                     return Err(SubscribeError::RequestedTopicsRequireAuthentication);
                 }
-            }
+                AcquireWebsocketForTopicsError::TungesteniteError(err) => {
+                    return Err(SubscribeError::TungesteniteError(err));
+                }
+                AcquireWebsocketForTopicsError::CouldNotCreateDataStream(err) => {
+                    return Err(SubscribeError::CouldNotCreateDataStream(err));
+                }
+            },
         };
 
         todo!()
