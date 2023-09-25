@@ -50,12 +50,12 @@ impl TryFrom<&RawMessage> for Message {
                     channel_message_to_account_orders_message(raw_channel_message)
                         .map_err(|_| ())?,
                 )),
-                RawChannelMessageData::Event(raw_event) => match &raw_event {
-                    RawEventChannelMessageData::Deals(raw) => Ok(Message::Deals(
+                RawChannelMessageData::Event(raw_event) => match &raw_event.event {
+                    RawEventEventChannelMessageData::Deals(raw) => Ok(Message::Deals(
                         channel_message_to_spot_deals_message(raw_channel_message)
                             .map_err(|_| ())?,
                     )),
-                    RawEventChannelMessageData::Kline(raw) => Ok(Message::Kline(
+                    RawEventEventChannelMessageData::Kline(raw) => Ok(Message::Kline(
                         channel_message_to_spot_kline_message(raw_channel_message)
                             .map_err(|_| ())?,
                     )),
@@ -90,7 +90,7 @@ pub(crate) struct RawChannelMessage {
     pub data: RawChannelMessageData,
     #[serde(rename = "s")]
     pub symbol: Option<String>,
-    #[serde(rename = "t")]
+    #[serde(rename = "t", with = "chrono::serde::ts_milliseconds")]
     pub timestamp: DateTime<Utc>,
 }
 
@@ -105,8 +105,72 @@ pub(crate) enum RawChannelMessageData {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) enum RawEventChannelMessageData {
+pub(crate) struct RawEventChannelMessageData {
+    #[serde(flatten)]
+    pub event: RawEventEventChannelMessageData,
+    #[serde(rename = "e")]
+    pub r#type: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum RawEventEventChannelMessageData {
     Deals(Vec<RawSpotDealData>),
     #[serde(rename = "k")]
     Kline(RawKlineData),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_message_kline() {
+        let json = r#"
+            {"d":{"e":"spot@public.kline.v3.api","k":{"t":1695680400,"o":"26288.47","c":"26289.11","h":"26289.12","l":"26288.46","v":"1.579991","a":"41535.11","T":1695680460,"i":"Min1"}},"c":"spot@public.kline.v3.api@BTCUSDT@Min1","t":1695680458622,"s":"BTCUSDT"}
+        "#;
+        let deserializer = &mut serde_json::Deserializer::from_str(json);
+
+        let result: Result<RawMessage, _> = serde_path_to_error::deserialize(deserializer);
+        eprintln!("{:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn raw_channel_message_kline() {
+        let json = r#"
+            {"d":{"e":"spot@public.kline.v3.api","k":{"t":1695680400,"o":"26288.47","c":"26289.11","h":"26289.12","l":"26288.46","v":"1.579991","a":"41535.11","T":1695680460,"i":"Min1"}},"c":"spot@public.kline.v3.api@BTCUSDT@Min1","t":1695680458622,"s":"BTCUSDT"}
+        "#;
+        let deserializer = &mut serde_json::Deserializer::from_str(json);
+
+        let result: Result<RawChannelMessage, _> = serde_path_to_error::deserialize(deserializer);
+        eprintln!("{:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn raw_kline_data() {
+        let json = r#"
+            {"t":1695680400,"o":"26288.47","c":"26289.11","h":"26289.12","l":"26288.46","v":"1.579991","a":"41535.11","T":1695680460,"i":"Min1"}
+        "#;
+        let deserializer = &mut serde_json::Deserializer::from_str(json);
+
+        let result: Result<RawKlineData, _> = serde_path_to_error::deserialize(deserializer);
+        eprintln!("{:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn raw_event_data() {
+        let json = r#"
+            {"e":"spot@public.kline.v3.api","k":{"t":1695680400,"o":"26288.47","c":"26289.11","h":"26289.12","l":"26288.46","v":"1.579991","a":"41535.11","T":1695680460,"i":"Min1"}}
+        "#;
+
+        let deserializer = &mut serde_json::Deserializer::from_str(json);
+
+        let result: Result<RawEventChannelMessageData, _> =
+            serde_path_to_error::deserialize(deserializer);
+        eprintln!("{:?}", result);
+        assert!(result.is_ok());
+    }
 }

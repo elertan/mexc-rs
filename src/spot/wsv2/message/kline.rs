@@ -1,6 +1,7 @@
 use crate::spot::v3::enums::KlineInterval;
 use crate::spot::wsv2::message::{
     RawChannelMessage, RawChannelMessageData, RawEventChannelMessageData,
+    RawEventEventChannelMessageData,
 };
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
@@ -16,14 +17,14 @@ pub(crate) struct RawKlineData {
     pub h: Decimal,
     pub l: Decimal,
     pub o: Decimal,
-    pub i: KlineIntervalSubscription,
+    pub i: KlineIntervalTopic,
     #[serde(rename = "t", with = "chrono::serde::ts_seconds")]
     pub t: DateTime<Utc>,
     pub v: Decimal,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum KlineIntervalSubscription {
+pub enum KlineIntervalTopic {
     /// 1 minute
     #[serde(rename = "Min1")]
     OneMinute,
@@ -57,47 +58,47 @@ pub enum KlineIntervalSubscription {
     OneMonth,
 }
 
-impl AsRef<str> for KlineIntervalSubscription {
+impl AsRef<str> for KlineIntervalTopic {
     fn as_ref(&self) -> &str {
         match self {
-            KlineIntervalSubscription::OneMinute => "Min1",
-            KlineIntervalSubscription::FiveMinutes => "Min5",
-            KlineIntervalSubscription::FifteenMinutes => "Min15",
-            KlineIntervalSubscription::ThirtyMinutes => "Min30",
-            KlineIntervalSubscription::OneHour => "Min60",
-            KlineIntervalSubscription::FourHours => "Hour4",
-            KlineIntervalSubscription::OneDay => "Day1",
-            KlineIntervalSubscription::OneMonth => "Month1",
+            KlineIntervalTopic::OneMinute => "Min1",
+            KlineIntervalTopic::FiveMinutes => "Min5",
+            KlineIntervalTopic::FifteenMinutes => "Min15",
+            KlineIntervalTopic::ThirtyMinutes => "Min30",
+            KlineIntervalTopic::OneHour => "Min60",
+            KlineIntervalTopic::FourHours => "Hour4",
+            KlineIntervalTopic::OneDay => "Day1",
+            KlineIntervalTopic::OneMonth => "Month1",
         }
     }
 }
 
-impl From<KlineIntervalSubscription> for KlineInterval {
-    fn from(value: KlineIntervalSubscription) -> Self {
+impl From<KlineIntervalTopic> for KlineInterval {
+    fn from(value: KlineIntervalTopic) -> Self {
         match value {
-            KlineIntervalSubscription::OneMinute => KlineInterval::OneMinute,
-            KlineIntervalSubscription::FiveMinutes => KlineInterval::FiveMinutes,
-            KlineIntervalSubscription::FifteenMinutes => KlineInterval::FifteenMinutes,
-            KlineIntervalSubscription::ThirtyMinutes => KlineInterval::ThirtyMinutes,
-            KlineIntervalSubscription::OneHour => KlineInterval::OneHour,
-            KlineIntervalSubscription::FourHours => KlineInterval::FourHours,
-            KlineIntervalSubscription::OneDay => KlineInterval::OneDay,
-            KlineIntervalSubscription::OneMonth => KlineInterval::OneMonth,
+            KlineIntervalTopic::OneMinute => KlineInterval::OneMinute,
+            KlineIntervalTopic::FiveMinutes => KlineInterval::FiveMinutes,
+            KlineIntervalTopic::FifteenMinutes => KlineInterval::FifteenMinutes,
+            KlineIntervalTopic::ThirtyMinutes => KlineInterval::ThirtyMinutes,
+            KlineIntervalTopic::OneHour => KlineInterval::OneHour,
+            KlineIntervalTopic::FourHours => KlineInterval::FourHours,
+            KlineIntervalTopic::OneDay => KlineInterval::OneDay,
+            KlineIntervalTopic::OneMonth => KlineInterval::OneMonth,
         }
     }
 }
 
-impl From<KlineInterval> for KlineIntervalSubscription {
+impl From<KlineInterval> for KlineIntervalTopic {
     fn from(value: KlineInterval) -> Self {
         match value {
-            KlineInterval::OneMinute => KlineIntervalSubscription::OneMinute,
-            KlineInterval::FiveMinutes => KlineIntervalSubscription::FiveMinutes,
-            KlineInterval::FifteenMinutes => KlineIntervalSubscription::FifteenMinutes,
-            KlineInterval::ThirtyMinutes => KlineIntervalSubscription::ThirtyMinutes,
-            KlineInterval::OneHour => KlineIntervalSubscription::OneHour,
-            KlineInterval::FourHours => KlineIntervalSubscription::FourHours,
-            KlineInterval::OneDay => KlineIntervalSubscription::OneDay,
-            KlineInterval::OneMonth => KlineIntervalSubscription::OneMonth,
+            KlineInterval::OneMinute => KlineIntervalTopic::OneMinute,
+            KlineInterval::FiveMinutes => KlineIntervalTopic::FiveMinutes,
+            KlineInterval::FifteenMinutes => KlineIntervalTopic::FifteenMinutes,
+            KlineInterval::ThirtyMinutes => KlineIntervalTopic::ThirtyMinutes,
+            KlineInterval::OneHour => KlineIntervalTopic::OneHour,
+            KlineInterval::FourHours => KlineIntervalTopic::FourHours,
+            KlineInterval::OneDay => KlineIntervalTopic::OneDay,
+            KlineInterval::OneMonth => KlineIntervalTopic::OneMonth,
         }
     }
 }
@@ -113,7 +114,7 @@ pub struct SpotKlineMessage {
     pub quantity: Decimal,
     pub start_time: DateTime<Utc>,
     pub end_time: DateTime<Utc>,
-    pub interval: KlineIntervalSubscription,
+    pub interval: KlineIntervalTopic,
     pub timestamp: DateTime<Utc>,
 }
 
@@ -132,7 +133,7 @@ pub(crate) fn channel_message_to_spot_kline_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
-    let RawEventChannelMessageData::Kline(kline) = &event else {
+    let RawEventEventChannelMessageData::Kline(kline) = &event.event else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
 

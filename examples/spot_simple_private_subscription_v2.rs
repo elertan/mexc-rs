@@ -1,9 +1,10 @@
 use dotenv::dotenv;
 use futures::StreamExt;
 use mexc_rs::spot::wsv2::auth::WebsocketAuth;
+use mexc_rs::spot::wsv2::message::kline::KlineIntervalTopic;
 use mexc_rs::spot::wsv2::stream::Stream;
 use mexc_rs::spot::wsv2::subscribe::{Subscribe, SubscribeParams};
-use mexc_rs::spot::wsv2::topic::Topic;
+use mexc_rs::spot::wsv2::topic::{DealsTopic, KlineTopic, Topic};
 use mexc_rs::spot::wsv2::MexcSpotWebsocketClient;
 
 #[tokio::main]
@@ -26,7 +27,20 @@ async fn main() {
         .subscribe(
             SubscribeParams::default()
                 .with_auth(websocket_auth)
-                .with_topics(vec![Topic::AccountUpdate]),
+                .with_topics(vec![
+                    Topic::AccountUpdate,
+                    Topic::AccountOrders,
+                    Topic::AccountDeals,
+                    Topic::Kline(KlineTopic::new(
+                        "BTCUSDT".to_string(),
+                        KlineIntervalTopic::OneMinute,
+                    )),
+                    Topic::Kline(KlineTopic::new(
+                        "KASUSDT".to_string(),
+                        KlineIntervalTopic::OneMinute,
+                    )),
+                    Topic::Deals(DealsTopic::new("KASUSDT".to_string())),
+                ]),
         )
         .await
         .expect("Failed to subscribe");
