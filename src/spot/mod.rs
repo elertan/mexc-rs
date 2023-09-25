@@ -1,12 +1,14 @@
-use hmac::digest::{InvalidLength};
+use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
 pub mod v3;
 #[cfg(feature = "ws")]
 pub mod ws;
+#[cfg(feature = "ws")]
+pub mod wsv2;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum MexcSpotApiEndpoint {
     Base,
     Custom(String),
@@ -80,7 +82,10 @@ impl MexcSpotApiClientWithAuthentication {
         }
     }
 
-    fn sign_query<T>(&self, query: T) -> Result<QueryWithSignature<T>, SignQueryError> where T: serde::Serialize {
+    fn sign_query<T>(&self, query: T) -> Result<QueryWithSignature<T>, SignQueryError>
+    where
+        T: serde::Serialize,
+    {
         let query_string = serde_urlencoded::to_string(&query)?;
         let mut mac = Hmac::<Sha256>::new_from_slice(self.secret_key.as_bytes())?;
         mac.update(query_string.as_bytes());
