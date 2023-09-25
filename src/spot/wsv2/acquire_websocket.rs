@@ -6,7 +6,13 @@ use crate::spot::wsv2::topic::Topic;
 use crate::spot::wsv2::{Inner, MexcSpotWebsocketClient, WebsocketEntry};
 use crate::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use async_trait::async_trait;
+use futures::stream::SplitSink;
+use futures::{SinkExt, StreamExt};
 use std::sync::Arc;
+use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::error::ProtocolError;
+use tokio_tungstenite::tungstenite::{Error, Message};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 #[derive(Debug)]
 pub(crate) struct AcquireWebsocketsForTopicsParams {
@@ -443,6 +449,8 @@ async fn create_private_websocket(
     );
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(&ws_url).await?;
+    let (ws_tx, mut ws_rx) = ws_stream.split();
+    let (tx, rx) = async_channel::unbounded();
 
     // Spawn all necessary tasks for this websocket...
 
@@ -455,6 +463,7 @@ async fn create_private_websocket(
         auth: Some(auth),
         listen_key: Some(user_data_stream_output.listen_key),
         topics: vec![],
+        message_tx: tx,
     };
     let websocket_entry = Arc::new(websocket_entry);
     inner.websockets.push(websocket_entry.clone());
@@ -475,17 +484,53 @@ async fn create_public_websocket(
     let endpoint_str = this.ws_endpoint.to_string();
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(&endpoint_str).await?;
+    let (ws_tx, mut ws_rx) = ws_stream.split();
+    let (tx, rx) = async_channel::unbounded();
 
     // Spawn all necessary tasks for this websocket...
+    spawn_websocket_sender_task(this.clone(), ws_tx, rx);
 
     let websocket_entry = WebsocketEntry {
         id: uuid::Uuid::new_v4(),
         auth: None,
         listen_key: None,
         topics: vec![],
+        message_tx: tx,
     };
     let websocket_entry = Arc::new(websocket_entry);
     inner.websockets.push(websocket_entry.clone());
 
     Ok(websocket_entry)
+}
+
+fn spawn_websocket_sender_task(
+    this: Arc<MexcSpotWebsocketClient>,
+    mut ws_tx: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
+    rx: async_channel::Receiver<Message>,
+) {
+    tokio::spawn(async move {
+        while let Ok(message) = rx.recv().await {
+            match ws_tx.send(message).await {
+                Ok(_) => {}
+                Err(err) => match err {
+                    Error::ConnectionClosed => {}
+                    Error::AlreadyClosed => {}
+                    Error::Protocol(protocol_err) => match protocol_err {
+                        ProtocolError::ResetWithoutClosingHandshake => {}
+                        _ => {
+                            tracing::error!(
+                                "Protocol error sending message to websocket: {}",
+                                protocol_err
+                            );
+                            break;
+                        }
+                    },
+                    _ => {
+                        tracing::error!("Error sending message to websocket: {}", err);
+                        break;
+                    }
+                },
+            }
+        }
+    });
 }

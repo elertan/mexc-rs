@@ -5,6 +5,7 @@ use crate::spot::MexcSpotApiEndpoint;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
 pub mod acquire_websocket;
@@ -20,6 +21,7 @@ pub struct WebsocketEntry {
     pub auth: Option<WebsocketAuth>,
     pub listen_key: Option<String>,
     pub topics: Vec<Topic>,
+    pub message_tx: async_channel::Sender<Message>,
 }
 
 #[derive(Debug)]
