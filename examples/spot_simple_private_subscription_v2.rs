@@ -1,5 +1,7 @@
 use dotenv::dotenv;
+use futures::StreamExt;
 use mexc_rs::spot::wsv2::auth::WebsocketAuth;
+use mexc_rs::spot::wsv2::stream::Stream;
 use mexc_rs::spot::wsv2::subscribe::{Subscribe, SubscribeParams};
 use mexc_rs::spot::wsv2::topic::Topic;
 use mexc_rs::spot::wsv2::MexcSpotWebsocketClient;
@@ -20,6 +22,7 @@ async fn main() {
 
     let ws_client = MexcSpotWebsocketClient::default().into_arc();
     ws_client
+        .clone()
         .subscribe(
             SubscribeParams::default()
                 .with_auth(websocket_auth)
@@ -28,13 +31,8 @@ async fn main() {
         .await
         .expect("Failed to subscribe");
 
-    // let mut stream = private_ws_client.stream();
-    // while let Some(message) = stream.next().await {
-    //     match message.as_ref() {
-    //         PrivateMexcSpotWsMessage::AccountUpdate(account_update_message) => {
-    //             tracing::info!("Account update: {:#?}", account_update_message);
-    //         }
-    //         _ => {},
-    //     }
-    // }
+    let mut stream = ws_client.stream();
+    while let Some(message) = stream.next().await {
+        dbg!(&message);
+    }
 }

@@ -10,6 +10,8 @@ use uuid::Uuid;
 pub mod acquire_websocket;
 pub mod auth;
 pub mod endpoint;
+pub mod message;
+pub mod stream;
 pub mod subscribe;
 pub mod topic;
 pub mod unsubscribe;
@@ -31,9 +33,11 @@ struct Inner {
 
 #[derive(Debug, Clone)]
 pub struct MexcSpotWebsocketClient {
+    inner: Arc<RwLock<Inner>>,
     ws_endpoint: Arc<MexcWebsocketEndpoint>,
     spot_api_endpoint: Arc<MexcSpotApiEndpoint>,
-    inner: Arc<RwLock<Inner>>,
+    broadcast_tx: async_broadcast::Sender<Arc<message::Message>>,
+    broadcast_rx: async_broadcast::Receiver<Arc<message::Message>>,
 }
 
 impl MexcSpotWebsocketClient {
@@ -41,13 +45,17 @@ impl MexcSpotWebsocketClient {
         ws_endpoint: MexcWebsocketEndpoint,
         spot_api_endpoint: MexcSpotApiEndpoint,
     ) -> Self {
+        let (broadcast_tx, broadcast_rx) = async_broadcast::broadcast(1024);
+
         Self {
-            ws_endpoint: Arc::new(ws_endpoint),
-            spot_api_endpoint: Arc::new(spot_api_endpoint),
             inner: Arc::new(RwLock::new(Inner {
                 auth_to_listen_key_map: HashMap::new(),
                 websockets: Vec::new(),
             })),
+            ws_endpoint: Arc::new(ws_endpoint),
+            spot_api_endpoint: Arc::new(spot_api_endpoint),
+            broadcast_tx,
+            broadcast_rx,
         }
     }
 
@@ -69,7 +77,7 @@ impl Default for MexcSpotWebsocketClient {
     rename_all = "SCREAMING_SNAKE_CASE"
 )]
 pub enum SendableMessage {
-    Subscription(String),
-    Unsubscription(String),
+    Subscription(Vec<String>),
+    Unsubscription(Vec<String>),
     Ping,
 }

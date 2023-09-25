@@ -3,10 +3,10 @@ use crate::spot::v3::ApiError;
 use crate::spot::wsv2::auth::WebsocketAuth;
 use crate::spot::wsv2::endpoint::MexcWebsocketEndpoint;
 use crate::spot::wsv2::topic::Topic;
-use crate::spot::wsv2::{Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
+use crate::spot::wsv2::{message, Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
 use crate::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use async_trait::async_trait;
-use futures::stream::SplitSink;
+use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -454,6 +454,7 @@ async fn create_private_websocket(
 
     // Spawn all necessary tasks for this websocket...
     spawn_websocket_sender_task(this.clone(), ws_tx, rx);
+    spawn_websocket_receiver_task(this.clone(), ws_rx);
 
     inner
         .auth_to_listen_key_map
@@ -490,6 +491,7 @@ async fn create_public_websocket(
 
     // Spawn all necessary tasks for this websocket...
     spawn_websocket_sender_task(this.clone(), ws_tx, rx);
+    spawn_websocket_receiver_task(this.clone(), ws_rx);
 
     let websocket_entry = WebsocketEntry {
         id: uuid::Uuid::new_v4(),
@@ -517,10 +519,16 @@ fn spawn_websocket_sender_task(
             match ws_tx.send(message).await {
                 Ok(_) => {}
                 Err(err) => match err {
-                    Error::ConnectionClosed => {}
-                    Error::AlreadyClosed => {}
+                    Error::ConnectionClosed => {
+                        todo!()
+                    }
+                    Error::AlreadyClosed => {
+                        todo!()
+                    }
                     Error::Protocol(protocol_err) => match protocol_err {
-                        ProtocolError::ResetWithoutClosingHandshake => {}
+                        ProtocolError::ResetWithoutClosingHandshake => {
+                            todo!()
+                        }
                         _ => {
                             tracing::error!(
                                 "Protocol error sending message to websocket: {}",
@@ -534,6 +542,68 @@ fn spawn_websocket_sender_task(
                         break;
                     }
                 },
+            }
+        }
+    });
+}
+
+fn spawn_websocket_receiver_task(
+    this: Arc<MexcSpotWebsocketClient>,
+    mut ws_rx: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+) {
+    let broadcast_tx = this.broadcast_tx.clone();
+    tokio::spawn(async move {
+        while let Some(message_result) = ws_rx.next().await {
+            let message = match message_result {
+                Ok(message) => message,
+                Err(err) => match err {
+                    Error::ConnectionClosed => {
+                        todo!()
+                    }
+                    Error::AlreadyClosed => {
+                        todo!()
+                    }
+                    Error::Protocol(protocol_err) => match protocol_err {
+                        ProtocolError::ResetWithoutClosingHandshake => {
+                            todo!()
+                        }
+                        _ => {
+                            tracing::error!(
+                                "Protocol error receiving message from websocket: {}",
+                                protocol_err
+                            );
+                            break;
+                        }
+                    },
+                    _ => {
+                        tracing::error!("Error receiving message from websocket: {}", err);
+                        break;
+                    }
+                },
+            };
+
+            let text = match message {
+                Message::Text(text) => text,
+                _ => {
+                    tracing::debug!("Received non-text message: {:?}", message);
+                    continue;
+                }
+            };
+
+            let mexc_message = match serde_json::from_str::<message::Message>(&text) {
+                Ok(x) => x,
+                Err(err) => {
+                    tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
+                    break;
+                }
+            };
+
+            match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
+                Ok(_) => {}
+                Err(err) => {
+                    tracing::error!("Failed to broadcast message: {}", err);
+                    break;
+                }
             }
         }
     });

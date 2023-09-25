@@ -1,7 +1,6 @@
 use crate::spot::v3::ApiError;
 use crate::spot::wsv2::acquire_websocket::{
-    AcquireWebsocketForTopicsError, AcquireWebsocketsForTopics, AcquireWebsocketsForTopicsOutput,
-    AcquireWebsocketsForTopicsParams,
+    AcquireWebsocketForTopicsError, AcquireWebsocketsForTopics, AcquireWebsocketsForTopicsParams,
 };
 use crate::spot::wsv2::auth::WebsocketAuth;
 use crate::spot::wsv2::topic::Topic;
@@ -9,18 +8,17 @@ use crate::spot::wsv2::{MexcSpotWebsocketClient, SendableMessage};
 use async_channel::SendError;
 use async_trait::async_trait;
 use std::sync::Arc;
-use tokio_tungstenite::tungstenite::Message;
 
 #[derive(Debug)]
 pub struct SubscribeParams {
     pub auth: Option<WebsocketAuth>,
     pub topics: Vec<Topic>,
-    pub wait_for_confirmation: bool,
+    // pub wait_for_confirmation: bool,
 }
 
 impl Default for SubscribeParams {
     fn default() -> Self {
-        Self::new(None, Vec::new(), true)
+        Self::new(None, Vec::new() /*, true*/)
     }
 }
 
@@ -28,12 +26,12 @@ impl SubscribeParams {
     pub fn new(
         auth: Option<WebsocketAuth>,
         topics: Vec<Topic>,
-        wait_for_confirmation: bool,
+        // wait_for_confirmation: bool,
     ) -> Self {
         Self {
             auth,
             topics,
-            wait_for_confirmation,
+            // wait_for_confirmation,
         }
     }
 
@@ -52,10 +50,10 @@ impl SubscribeParams {
         self
     }
 
-    pub fn with_wait_for_confirmation(mut self, wait_for_confirmation: bool) -> Self {
-        self.wait_for_confirmation = wait_for_confirmation;
-        self
-    }
+    // pub fn with_wait_for_confirmation(mut self, wait_for_confirmation: bool) -> Self {
+    //     self.wait_for_confirmation = wait_for_confirmation;
+    //     self
+    // }
 }
 
 #[derive(Debug)]
@@ -129,8 +127,7 @@ impl Subscribe for MexcSpotWebsocketClient {
                 .for_topics
                 .iter()
                 .map(|topic| topic.to_topic_subscription_string())
-                .collect::<Vec<String>>()
-                .join(",");
+                .collect::<Vec<String>>();
             let sendable_message = SendableMessage::Subscription(params);
 
             acquired_ws
