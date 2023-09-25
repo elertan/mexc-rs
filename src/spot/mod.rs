@@ -5,8 +5,6 @@ use sha2::Sha256;
 pub mod v3;
 #[cfg(feature = "ws")]
 pub mod ws;
-#[cfg(feature = "ws")]
-pub mod wsv2;
 
 #[derive(Debug, Clone)]
 pub enum MexcSpotApiEndpoint {

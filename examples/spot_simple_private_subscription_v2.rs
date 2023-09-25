@@ -1,11 +1,11 @@
 use dotenv::dotenv;
 use futures::StreamExt;
-use mexc_rs::spot::wsv2::auth::WebsocketAuth;
-use mexc_rs::spot::wsv2::message::kline::KlineIntervalTopic;
-use mexc_rs::spot::wsv2::stream::Stream;
-use mexc_rs::spot::wsv2::subscribe::{Subscribe, SubscribeParams};
-use mexc_rs::spot::wsv2::topic::{DealsTopic, KlineTopic, Topic};
-use mexc_rs::spot::wsv2::MexcSpotWebsocketClient;
+use mexc_rs::spot::ws::auth::WebsocketAuth;
+use mexc_rs::spot::ws::message::kline::KlineIntervalTopic;
+use mexc_rs::spot::ws::stream::Stream;
+use mexc_rs::spot::ws::subscribe::{Subscribe, SubscribeParams};
+use mexc_rs::spot::ws::topic::{DealsTopic, KlineTopic, Topic};
+use mexc_rs::spot::ws::MexcSpotWebsocketClient;
 
 #[tokio::main]
 async fn main() {

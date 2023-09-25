@@ -1,5 +1,5 @@
 use crate::spot::v3::enums::{OrderSide, OrderStatus};
-use crate::spot::wsv2::message::{RawChannelMessage, RawChannelMessageData};
+use crate::spot::ws::message::{RawChannelMessage, RawChannelMessageData};
 use chrono::{DateTime, Utc};
 use num_traits::FromPrimitive;
 use rust_decimal::Decimal;

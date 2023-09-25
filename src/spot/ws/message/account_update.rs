@@ -1,5 +1,5 @@
 use crate::spot::v3::enums::ChangedType;
-use crate::spot::wsv2::message::{RawChannelMessage, RawChannelMessageData};
+use crate::spot::ws::message::{RawChannelMessage, RawChannelMessageData};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 

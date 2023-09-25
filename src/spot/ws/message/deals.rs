@@ -1,4 +1,4 @@
-use crate::spot::wsv2::message::{
+use crate::spot::ws::message::{
     RawChannelMessage, RawChannelMessageData, RawEventChannelMessageData,
     RawEventEventChannelMessageData,
 };

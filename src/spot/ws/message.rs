@@ -1,17 +1,17 @@
-use crate::spot::wsv2::message::account_deals::{
+use crate::spot::ws::message::account_deals::{
     channel_message_to_account_deals_message, AccountDealsMessage, RawAccountDealsData,
 };
-use crate::spot::wsv2::message::account_orders::{
+use crate::spot::ws::message::account_orders::{
     channel_message_to_account_orders_message, AccountOrdersMessage,
     RawAccountOrdersChannelMessageData,
 };
-use crate::spot::wsv2::message::account_update::{
+use crate::spot::ws::message::account_update::{
     channel_message_to_account_update_message, AccountUpdateMessage, RawAccountUpdateData,
 };
-use crate::spot::wsv2::message::deals::{
+use crate::spot::ws::message::deals::{
     channel_message_to_spot_deals_message, RawSpotDealData, SpotDealsMessage,
 };
-use crate::spot::wsv2::message::kline::{
+use crate::spot::ws::message::kline::{
     channel_message_to_spot_kline_message, RawKlineData, SpotKlineMessage,
 };
 use chrono::{DateTime, Utc};

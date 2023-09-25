@@ -3,9 +3,9 @@ use crate::spot::v3::keep_alive_user_data_stream::{
     KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams,
 };
 use crate::spot::v3::ApiError;
-use crate::spot::wsv2::auth::WebsocketAuth;
-use crate::spot::wsv2::topic::Topic;
-use crate::spot::wsv2::{message, Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
+use crate::spot::ws::auth::WebsocketAuth;
+use crate::spot::ws::topic::Topic;
+use crate::spot::ws::{message, Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
 use crate::spot::MexcSpotApiClientWithAuthentication;
 use async_channel::Sender;
 use async_trait::async_trait;

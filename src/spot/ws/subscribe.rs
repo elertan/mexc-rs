@@ -1,10 +1,10 @@
 use crate::spot::v3::ApiError;
-use crate::spot::wsv2::acquire_websocket::{
+use crate::spot::ws::acquire_websocket::{
     AcquireWebsocketForTopicsError, AcquireWebsocketsForTopics, AcquireWebsocketsForTopicsParams,
 };
-use crate::spot::wsv2::auth::WebsocketAuth;
-use crate::spot::wsv2::topic::Topic;
-use crate::spot::wsv2::{MexcSpotWebsocketClient, SendableMessage};
+use crate::spot::ws::auth::WebsocketAuth;
+use crate::spot::ws::topic::Topic;
+use crate::spot::ws::{MexcSpotWebsocketClient, SendableMessage};
 use async_channel::SendError;
 use async_trait::async_trait;
 use std::sync::Arc;

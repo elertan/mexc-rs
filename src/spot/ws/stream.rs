@@ -1,5 +1,5 @@
-use crate::spot::wsv2::message::Message;
-use crate::spot::wsv2::MexcSpotWebsocketClient;
+use crate::spot::ws::message::Message;
+use crate::spot::ws::MexcSpotWebsocketClient;
 use futures::stream::BoxStream;
 use futures::StreamExt;
 use std::sync::Arc;

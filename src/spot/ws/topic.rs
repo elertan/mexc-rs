@@ -1,4 +1,4 @@
-use crate::spot::wsv2::message::kline::KlineIntervalTopic;
+use crate::spot::ws::message::kline::KlineIntervalTopic;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Topic {
