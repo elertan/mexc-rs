@@ -4,10 +4,9 @@ use crate::spot::v3::keep_alive_user_data_stream::{
 };
 use crate::spot::v3::ApiError;
 use crate::spot::wsv2::auth::WebsocketAuth;
-use crate::spot::wsv2::endpoint::MexcWebsocketEndpoint;
 use crate::spot::wsv2::topic::Topic;
 use crate::spot::wsv2::{message, Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
-use crate::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::MexcSpotApiClientWithAuthentication;
 use async_channel::Sender;
 use async_trait::async_trait;
 use futures::stream::{SplitSink, SplitStream};
@@ -815,13 +814,17 @@ fn spawn_websocket_receiver_task(
                         }
                     };
 
-                    let mexc_message = match serde_json::from_str::<message::Message>(&text) {
+                    let raw_message = match serde_json::from_str::<message::RawMessage>(&text) {
                         Ok(x) => x,
                         Err(err) => {
                             cancellation_token.cancel();
                             tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
                             break;
                         }
+                    };
+                    let mexc_message_result: Result<message::Message, ()> = (&raw_message).try_into();
+                    let Ok(mexc_message) = mexc_message_result else {
+                        continue;
                     };
 
                     match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
