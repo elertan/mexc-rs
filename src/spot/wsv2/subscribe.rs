@@ -102,6 +102,7 @@ impl Subscribe for MexcSpotWebsocketClient {
             acquire_websocket_params = acquire_websocket_params.with_auth(auth);
         }
         let acquire_output = match self
+            .clone()
             .acquire_websockets_for_topics(acquire_websocket_params)
             .await
         {
@@ -122,7 +123,7 @@ impl Subscribe for MexcSpotWebsocketClient {
             },
         };
 
-        for acquired_ws in acquire_output.websockets {
+        for acquired_ws in acquire_output.websockets.into_iter() {
             let params = acquired_ws
                 .for_topics
                 .iter()
@@ -130,11 +131,16 @@ impl Subscribe for MexcSpotWebsocketClient {
                 .collect::<Vec<String>>();
             let sendable_message = SendableMessage::Subscription(params);
 
-            acquired_ws
-                .websocket_entry
-                .message_tx
-                .send(sendable_message)
-                .await?;
+            let tx = acquired_ws.websocket_entry.message_tx.read().await;
+            tx.send(sendable_message).await?;
+
+            let mut topics = acquired_ws.websocket_entry.topics.write().await;
+            let topics_websocket_entry_does_not_have = acquired_ws
+                .for_topics
+                .into_iter()
+                .filter(|topic| !topics.contains(topic))
+                .collect::<Vec<Topic>>();
+            topics.extend(topics_websocket_entry_does_not_have);
         }
 
         Ok(SubscribeOutput {})

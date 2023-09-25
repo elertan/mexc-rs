@@ -16,13 +16,13 @@ pub mod subscribe;
 pub mod topic;
 pub mod unsubscribe;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WebsocketEntry {
     pub id: Uuid,
     pub auth: Option<WebsocketAuth>,
     pub listen_key: Option<String>,
-    pub topics: Vec<Topic>,
-    pub message_tx: async_channel::Sender<SendableMessage>,
+    pub topics: Arc<RwLock<Vec<Topic>>>,
+    pub message_tx: Arc<RwLock<async_channel::Sender<SendableMessage>>>,
 }
 
 #[derive(Debug)]

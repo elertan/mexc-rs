@@ -14,6 +14,7 @@ use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
 use std::sync::Arc;
 use tokio::net::TcpStream;
+use tokio::sync::RwLock;
 use tokio_tungstenite::tungstenite::error::ProtocolError;
 use tokio_tungstenite::tungstenite::{Error, Message};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -162,22 +163,18 @@ async fn acquire_websockets_for_public_topics(
     // Look for existing websockets that have a subscription to one or
     // more of these topics.
 
-    let matching_websockets = inner
-        .websockets
-        .iter()
-        .filter_map(|websocket_entry| {
-            // See what topics are facilitated by this websocket.
-            let topics_facilitated_by_websocket = websocket_entry
-                .topics
-                .iter()
-                .filter_map(|t| public_topics.contains(t).then(|| t.clone()))
-                .collect::<Vec<_>>();
-            if topics_facilitated_by_websocket.is_empty() {
-                return None;
-            }
-            Some((websocket_entry.clone(), topics_facilitated_by_websocket))
-        })
-        .collect::<Vec<_>>();
+    let mut matching_websockets = vec![];
+    for websocket_entry in inner.websockets.iter() {
+        let topics = websocket_entry.topics.read().await;
+        let topics_facilitated_by_websocket = topics
+            .iter()
+            .filter_map(|t| public_topics.contains(t).then(|| t.clone()))
+            .collect::<Vec<_>>();
+        if topics_facilitated_by_websocket.is_empty() {
+            continue;
+        }
+        matching_websockets.push((websocket_entry.clone(), topics_facilitated_by_websocket));
+    }
 
     let topics_not_covered_matching_websockets = public_topics
         .iter()
@@ -201,9 +198,15 @@ async fn acquire_websockets_for_public_topics(
     }
 
     // Check whether one of the websockets have enough space to accommodate the topics.
-    let websocket_that_can_accommodate = inner.websockets.iter().find(|websocket| {
-        websocket.auth == None && websocket.topics.len() + public_topics.len() <= 30
-    });
+    let mut websocket_that_can_accommodate = None;
+    for websocket in inner.websockets.iter() {
+        if websocket.auth.as_ref() == None
+            && websocket.topics.read().await.len() + public_topics.len() <= 30
+        {
+            websocket_that_can_accommodate = Some(websocket.clone());
+            break;
+        }
+    }
 
     if let Some(websocket_entry) = websocket_that_can_accommodate {
         // Check whether this websocket is part of the matching websockets via id
@@ -219,11 +222,7 @@ async fn acquire_websockets_for_public_topics(
                         topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>();
                     if ws_entry.id == websocket_entry.id {
                         // Extend this websocket with the topics that are not yet covered
-                        for_topics.extend(
-                            topics_not_covered_matching_websockets
-                                .iter()
-                                .map(|t| t.clone()),
-                        );
+                        for_topics.extend(topics_not_covered_matching_websockets.iter().cloned());
                     }
                     AcquiredWebsocket {
                         websocket_entry: ws_entry,
@@ -293,24 +292,21 @@ async fn acquire_websockets_for_private_topics(
     // Otherwise, we have to set up a new websocket that we could subscribe/unsubscribe to.
     // We can assume once we find a topic for a websocket with the same auth, that there won't be
     // any other left
-    let matching_websockets = inner
-        .websockets
-        .iter()
-        .filter_map(|websocket_entry| {
-            // If this websocket is not for authenticated topics, we can ignore it.
-            if websocket_entry.auth.as_ref() != Some(auth) {
-                return None;
-            }
-            // If this websocket is for the same user (via auth)
-            // see what topics are facilitated by this websocket.
-            let topics_facilitated_by_websocket = websocket_entry
-                .topics
-                .iter()
-                .filter_map(|t| private_topics.contains(t).then(|| t.clone()))
-                .collect::<Vec<_>>();
-            Some((websocket_entry.clone(), topics_facilitated_by_websocket))
-        })
-        .collect::<Vec<_>>();
+    let mut matching_websockets = vec![];
+    for websocket_entry in inner.websockets.iter() {
+        if websocket_entry.auth.as_ref() != Some(auth) {
+            continue;
+        }
+        let topics = websocket_entry.topics.read().await;
+        let topics_facilitated_by_websocket = topics
+            .iter()
+            .filter_map(|t| private_topics.contains(t).then(|| t.clone()))
+            .collect::<Vec<_>>();
+        if topics_facilitated_by_websocket.is_empty() {
+            continue;
+        }
+        matching_websockets.push((websocket_entry.clone(), topics_facilitated_by_websocket));
+    }
 
     let topics_not_covered_matching_websockets = private_topics
         .iter()
@@ -334,9 +330,15 @@ async fn acquire_websockets_for_private_topics(
     }
 
     // Check whether one of the websockets have enough space to accommodate the topics.
-    let websocket_that_can_accommodate = inner.websockets.iter().find(|websocket| {
-        websocket.auth.as_ref() == Some(auth) && websocket.topics.len() + private_topics.len() <= 30
-    });
+    let mut websocket_that_can_accommodate = None;
+    for websocket in inner.websockets.iter() {
+        if websocket.auth.as_ref() == Some(auth)
+            && websocket.topics.read().await.len() + private_topics.len() <= 30
+        {
+            websocket_that_can_accommodate = Some(websocket.clone());
+            break;
+        }
+    }
 
     if let Some(websocket_entry) = websocket_that_can_accommodate {
         // Check whether this websocket is part of the matching websockets via id
@@ -352,11 +354,7 @@ async fn acquire_websockets_for_private_topics(
                         topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>();
                     if ws_entry.id == websocket_entry.id {
                         // Extend this websocket with the topics that are not yet covered
-                        for_topics.extend(
-                            topics_not_covered_matching_websockets
-                                .iter()
-                                .map(|t| t.clone()),
-                        );
+                        for_topics.extend(topics_not_covered_matching_websockets.iter().cloned());
                     }
                     AcquiredWebsocket {
                         websocket_entry: ws_entry,
@@ -454,7 +452,7 @@ async fn create_private_websocket(
     );
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(&ws_url).await?;
-    let (ws_tx, mut ws_rx) = ws_stream.split();
+    let (ws_tx, ws_rx) = ws_stream.split();
     let (tx, rx) = async_channel::unbounded();
 
     let cancellation_token = CancellationToken::new();
@@ -478,11 +476,12 @@ async fn create_private_websocket(
         id: uuid::Uuid::new_v4(),
         auth: Some(auth),
         listen_key: Some(user_data_stream_output.listen_key),
-        topics: vec![],
-        message_tx: tx,
+        topics: Arc::new(RwLock::new(vec![])),
+        message_tx: Arc::new(RwLock::new(tx)),
     };
     let websocket_entry = Arc::new(websocket_entry);
     inner.websockets.push(websocket_entry.clone());
+
     Ok(websocket_entry)
 }
 
@@ -513,8 +512,8 @@ async fn create_public_websocket(
         id: uuid::Uuid::new_v4(),
         auth: None,
         listen_key: None,
-        topics: vec![],
-        message_tx: tx,
+        topics: Arc::new(RwLock::new(vec![])),
+        message_tx: Arc::new(RwLock::new(tx)),
     };
     let websocket_entry = Arc::new(websocket_entry);
     inner.websockets.push(websocket_entry.clone());
