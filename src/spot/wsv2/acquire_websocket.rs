@@ -3,7 +3,7 @@ use crate::spot::v3::ApiError;
 use crate::spot::wsv2::auth::WebsocketAuth;
 use crate::spot::wsv2::endpoint::MexcWebsocketEndpoint;
 use crate::spot::wsv2::topic::Topic;
-use crate::spot::wsv2::{Inner, MexcSpotWebsocketClient, WebsocketEntry};
+use crate::spot::wsv2::{Inner, MexcSpotWebsocketClient, SendableMessage, WebsocketEntry};
 use crate::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use async_trait::async_trait;
 use futures::stream::SplitSink;
@@ -506,10 +506,13 @@ async fn create_public_websocket(
 fn spawn_websocket_sender_task(
     this: Arc<MexcSpotWebsocketClient>,
     mut ws_tx: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
-    rx: async_channel::Receiver<Message>,
+    rx: async_channel::Receiver<SendableMessage>,
 ) {
     tokio::spawn(async move {
         while let Ok(message) = rx.recv().await {
+            let json = serde_json::to_string(&message).expect("Failed to serialize message");
+            let message = Message::Text(json);
+
             match ws_tx.send(message).await {
                 Ok(_) => {}
                 Err(err) => match err {

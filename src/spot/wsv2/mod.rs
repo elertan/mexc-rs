@@ -21,7 +21,7 @@ pub struct WebsocketEntry {
     pub auth: Option<WebsocketAuth>,
     pub listen_key: Option<String>,
     pub topics: Vec<Topic>,
-    pub message_tx: async_channel::Sender<Message>,
+    pub message_tx: async_channel::Sender<SendableMessage>,
 }
 
 #[derive(Debug)]
@@ -57,4 +57,16 @@ impl Default for MexcSpotWebsocketClient {
     fn default() -> Self {
         Self::new_with_endpoints(MexcWebsocketEndpoint::Base, MexcSpotApiEndpoint::Base)
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(
+    tag = "method",
+    content = "params",
+    rename_all = "SCREAMING_SNAKE_CASE"
+)]
+pub enum SendableMessage {
+    Subscription(String),
+    Unsubscription(String),
+    Ping,
 }

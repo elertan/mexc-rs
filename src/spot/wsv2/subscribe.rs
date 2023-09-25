@@ -5,9 +5,11 @@ use crate::spot::wsv2::acquire_websocket::{
 };
 use crate::spot::wsv2::auth::WebsocketAuth;
 use crate::spot::wsv2::topic::Topic;
-use crate::spot::wsv2::MexcSpotWebsocketClient;
+use crate::spot::wsv2::{MexcSpotWebsocketClient, SendableMessage};
+use async_channel::SendError;
 use async_trait::async_trait;
 use std::sync::Arc;
+use tokio_tungstenite::tungstenite::Message;
 
 #[derive(Debug)]
 pub struct SubscribeParams {
@@ -77,6 +79,9 @@ pub enum SubscribeError {
 
     #[error("Could not create datastream (listen key)")]
     CouldNotCreateDataStream(#[from] ApiError),
+
+    #[error("Failed to send message through channel: {0}")]
+    SendError(#[from] SendError<SendableMessage>),
 }
 
 #[async_trait]
@@ -118,6 +123,22 @@ impl Subscribe for MexcSpotWebsocketClient {
                 }
             },
         };
+
+        for acquired_ws in acquire_output.websockets {
+            let params = acquired_ws
+                .for_topics
+                .iter()
+                .map(|topic| topic.to_topic_subscription_string())
+                .collect::<Vec<String>>()
+                .join(",");
+            let sendable_message = SendableMessage::Subscription(params);
+
+            acquired_ws
+                .websocket_entry
+                .message_tx
+                .send(sendable_message)
+                .await?;
+        }
 
         todo!()
     }
