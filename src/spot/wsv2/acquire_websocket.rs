@@ -697,18 +697,27 @@ fn spawn_websocket_sender_task(
                             Error::ConnectionClosed => {
                                 cancellation_token.cancel();
                                 tracing::error!("Failed to send message to websocket because the connection was closed");
-                                todo!()
+                                if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                    tracing::error!("Failed to reconnect websocket: {}", err);
+                                }
+                                break;
                             }
                             Error::AlreadyClosed => {
                                 cancellation_token.cancel();
                                 tracing::error!("Failed to send message to websocket because the connection was already closed");
-                                todo!()
+                                if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                    tracing::error!("Failed to reconnect websocket: {}", err);
+                                }
+                                break;
                             }
                             Error::Protocol(protocol_err) => match protocol_err {
                                 ProtocolError::ResetWithoutClosingHandshake => {
                                     cancellation_token.cancel();
                                     tracing::error!("Failed to send message to websocket because the connection was reset without closing handshake");
-                                    todo!()
+                                    if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                        tracing::error!("Failed to reconnect websocket: {}", err);
+                                    }
+                                    break;
                                 }
                                 _ => {
                                     cancellation_token.cancel();
@@ -759,18 +768,27 @@ fn spawn_websocket_receiver_task(
                             Error::ConnectionClosed => {
                                 cancellation_token.cancel();
                                 tracing::error!("Failed to receive message from websocket because the connection was closed");
-                                todo!()
+                                if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                    tracing::error!("Failed to reconnect websocket: {}", err);
+                                }
+                                break;
                             }
                             Error::AlreadyClosed => {
                                 cancellation_token.cancel();
                                 tracing::error!("Failed to receive message from websocket because the connection was already closed");
-                                todo!()
+                                if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                    tracing::error!("Failed to reconnect websocket: {}", err);
+                                }
+                                break;
                             }
                             Error::Protocol(protocol_err) => match protocol_err {
                                 ProtocolError::ResetWithoutClosingHandshake => {
                                     cancellation_token.cancel();
                                     tracing::error!("Failed to receive message from websocket because the connection was reset without closing handshake");
-                                    todo!()
+                                    if let Err(err) = reconnect_websocket(this.clone(), websocket_id).await {
+                                        tracing::error!("Failed to reconnect websocket: {}", err);
+                                    }
+                                    break;
                                 }
                                 _ => {
                                     cancellation_token.cancel();
