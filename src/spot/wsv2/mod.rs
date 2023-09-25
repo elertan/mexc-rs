@@ -17,7 +17,7 @@ pub mod unsubscribe;
 #[derive(Debug)]
 pub struct WebsocketEntry {
     pub id: Uuid,
-    pub auth: WebsocketAuth,
+    pub auth: Option<WebsocketAuth>,
     pub listen_key: Option<String>,
     pub topics: Vec<Topic>,
 }

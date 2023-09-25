@@ -135,7 +135,7 @@ async fn acquire_websockets_for_private_topics(
         .iter()
         .filter_map(|websocket_entry| {
             // If this websocket is not for authenticated topics, we can ignore it.
-            if websocket_entry.auth != *auth {
+            if websocket_entry.auth.as_ref() != Some(auth) {
                 return None;
             }
             // If this websocket is for the same user (via auth)
@@ -172,7 +172,7 @@ async fn acquire_websockets_for_private_topics(
 
     // Check whether one of the websockets have enough space to accommodate the topics.
     let websocket_that_can_accommodate = inner.websockets.iter().find(|websocket| {
-        websocket.auth == *auth && websocket.topics.len() + private_topics.len() <= 30
+        websocket.auth.as_ref() == Some(auth) && websocket.topics.len() + private_topics.len() <= 30
     });
 
     if let Some(websocket_entry) = websocket_that_can_accommodate {
@@ -262,19 +262,11 @@ async fn create_private_websocket(
     inner: &mut Inner,
     auth: WebsocketAuth,
 ) -> Result<Arc<WebsocketEntry>, CreatePrivateWebsocketError> {
-    // let (ws, _) = match auth {
-    //     None => {
-    //         tokio_tungstenite::connect_async(ws_endpoint.as_ref()).await?
-    //     }
-    //     Some(auth) => {
-    //     }
-    // };
-    //
     // Check whether we can create a new websocket for the topics
     let amount_of_websockets_for_auth = inner
         .websockets
         .iter()
-        .filter(|websocket| websocket.auth == auth)
+        .filter(|websocket| websocket.auth.as_ref() == Some(&auth))
         .count();
     if amount_of_websockets_for_auth >= 5 {
         return Err(CreatePrivateWebsocketError::MaximumAmountOfTopicsForUserWillBeExceeded);
@@ -308,8 +300,36 @@ async fn create_private_websocket(
 
     let websocket_entry = WebsocketEntry {
         id: uuid::Uuid::new_v4(),
-        auth,
+        auth: Some(auth),
         listen_key: Some(user_data_stream_output.listen_key),
+        topics: vec![],
+    };
+    let websocket_entry = Arc::new(websocket_entry);
+    inner.websockets.push(websocket_entry.clone());
+
+    Ok(websocket_entry)
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum CreatePublicWebsocketError {
+    #[error("Tungestenite error: {0}")]
+    TungesteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+}
+
+async fn create_public_websocket(
+    this: Arc<MexcWebsocketClient>,
+    inner: &mut Inner,
+) -> Result<Arc<WebsocketEntry>, CreatePublicWebsocketError> {
+    let endpoint_str = this.ws_endpoint.to_string();
+
+    let (ws_stream, _) = tokio_tungstenite::connect_async(&endpoint_str).await?;
+
+    // Spawn all necessary tasks for this websocket...
+
+    let websocket_entry = WebsocketEntry {
+        id: uuid::Uuid::new_v4(),
+        auth: None,
+        listen_key: None,
         topics: vec![],
     };
     let websocket_entry = Arc::new(websocket_entry);
