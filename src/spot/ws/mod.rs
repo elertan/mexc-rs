@@ -36,8 +36,7 @@ pub struct MexcSpotWebsocketClient {
     inner: Arc<RwLock<Inner>>,
     ws_endpoint: Arc<MexcWebsocketEndpoint>,
     spot_api_endpoint: Arc<MexcSpotApiEndpoint>,
-    broadcast_tx: async_broadcast::Sender<Arc<message::Message>>,
-    broadcast_rx: async_broadcast::Receiver<Arc<message::Message>>,
+    broadcast_tx: tokio::sync::broadcast::Sender<Arc<message::Message>>,
 }
 
 impl MexcSpotWebsocketClient {
@@ -45,7 +44,7 @@ impl MexcSpotWebsocketClient {
         ws_endpoint: MexcWebsocketEndpoint,
         spot_api_endpoint: MexcSpotApiEndpoint,
     ) -> Self {
-        let (broadcast_tx, broadcast_rx) = async_broadcast::broadcast(1024);
+        let (broadcast_tx, _broadcast_rx) = tokio::sync::broadcast::channel(1024);
 
         Self {
             inner: Arc::new(RwLock::new(Inner {
@@ -55,7 +54,6 @@ impl MexcSpotWebsocketClient {
             ws_endpoint: Arc::new(ws_endpoint),
             spot_api_endpoint: Arc::new(spot_api_endpoint),
             broadcast_tx,
-            broadcast_rx,
         }
     }
 

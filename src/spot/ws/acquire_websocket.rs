@@ -827,10 +827,10 @@ fn spawn_websocket_receiver_task(
                         continue;
                     };
 
-                    match broadcast_tx.broadcast(Arc::new(mexc_message)).await {
+                    match broadcast_tx.send(Arc::new(mexc_message)) {
                         Ok(_) => {}
                         Err(err) => {
-                            cancellation_token.cancel();
+                            // cancellation_token.cancel();
                             tracing::error!("Failed to broadcast message: {}", err);
                             break;
                         }

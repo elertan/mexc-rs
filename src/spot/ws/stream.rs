@@ -10,7 +10,7 @@ pub trait Stream {
 
 impl Stream for MexcSpotWebsocketClient {
     fn stream<'a>(self: Arc<Self>) -> BoxStream<'a, Arc<Message>> {
-        let mut rx = self.broadcast_rx.clone();
+        let mut rx = self.broadcast_tx.subscribe();
         let stream = async_stream::stream! {
             while let Ok(message) = rx.recv().await {
                 yield message;
