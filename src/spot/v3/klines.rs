@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, TimeZone, Utc};
-use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
-use crate::spot::v3::{ApiError, ApiResult, ErrorResponse};
 use crate::spot::v3::enums::KlineInterval;
+use crate::spot::v3::{ApiError, ApiResult, ErrorResponse};
+use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use async_trait::async_trait;
+use chrono::{DateTime, TimeZone, Utc};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,11 +39,24 @@ pub struct Kline {
     pub high: Decimal,
     pub low: Decimal,
     pub close: Decimal,
+    // #[serde(deserialize_with = "volume_decimal")]
     pub volume: Decimal,
     #[serde(with = "chrono::serde::ts_seconds")]
     pub close_time: DateTime<Utc>,
     pub quote_asset_volume: Decimal,
 }
+
+// fn volume_decimal<'de, D>(deserializer: D) -> Result<Decimal, D::Error>
+// where
+//     D: Deserializer<'de>,
+// {
+//     let v = Value::deserialize(deserializer)?;
+//     let Ok(deser) = <Decimal as Deserialize>::deserialize(v.clone()) else {
+//         tracing::error!("Unable to parse Decimal for volume: {}", v);
+//         return Ok(Decimal::from(0));
+//     };
+//     Ok(deser)
+// }
 
 #[async_trait]
 pub trait KlinesEndpoint {
@@ -80,75 +95,78 @@ async fn klines_impl(
                 .ok_or(ApiError::UnableToParseResponse)?;
             let open_time = Utc.timestamp_millis_opt(open_time_ts_milliseconds).unwrap();
 
-            let open = entries
+            let open_str = entries
                 .get(1)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
-                    tracing::error!("Unable to parse Decimal for open: {}", err);
-                    ApiError::UnableToParseResponse
-                })?;
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let open_value = filter_decimal_str(open_str);
+            let open = open_value.parse::<Decimal>().map_err(|err| {
+                tracing::error!("Unable to parse Decimal for open: {}", err);
+                ApiError::UnableToParseResponse
+            })?;
 
-            let high = entries
+            let high_str = entries
                 .get(2)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
-                    tracing::error!("Unable to parse Decimal for high: {}", err);
-                    ApiError::UnableToParseResponse
-                })?;
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let high_value = filter_decimal_str(high_str);
+            let high = high_value.parse::<Decimal>().map_err(|err| {
+                tracing::error!("Unable to parse Decimal for high: {}", err);
+                ApiError::UnableToParseResponse
+            })?;
 
-            let low = entries
+            let low_str = entries
                 .get(3)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
-                    tracing::error!("Unable to parse Decimal for low: {}", err);
-                    ApiError::UnableToParseResponse
-                })?;
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let low_value = filter_decimal_str(low_str);
+            let low = low_value.parse::<Decimal>().map_err(|err| {
+                tracing::error!("Unable to parse Decimal for low: {}", err);
+                ApiError::UnableToParseResponse
+            })?;
 
-            let close = entries
+            let close_str = entries
                 .get(4)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
-                    tracing::error!("Unable to parse Decimal for close: {}", err);
-                    ApiError::UnableToParseResponse
-                })?;
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let close_value = filter_decimal_str(close_str);
+            let close = close_value.parse::<Decimal>().map_err(|err| {
+                tracing::error!("Unable to parse Decimal for close: {}", err);
+                ApiError::UnableToParseResponse
+            })?;
 
-            let volume = entries
+            let volume_str = entries
                 .get(5)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
-                    tracing::error!("Unable to parse Decimal for volume: {}", err);
-                    ApiError::UnableToParseResponse
-                })?;
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let volume_value = filter_decimal_str(volume_str);
+            let volume = volume_value.parse::<Decimal>().map_err(|err| {
+                tracing::error!("Unable to parse Decimal for volume: {}", err,);
+                ApiError::UnableToParseResponse
+            })?;
 
             let close_time_ts_milliseconds = entries
                 .get(6)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_i64()
                 .ok_or(ApiError::UnableToParseResponse)?;
-            let close_time = Utc.timestamp_millis_opt(close_time_ts_milliseconds).unwrap();
+            let close_time = Utc
+                .timestamp_millis_opt(close_time_ts_milliseconds)
+                .unwrap();
 
-            let quote_asset_volume = entries
+            let quote_asset_volume_str = entries
                 .get(7)
                 .ok_or(ApiError::UnableToParseResponse)?
                 .as_str()
-                .ok_or(ApiError::UnableToParseResponse)?
-                .parse::<Decimal>()
-                .map_err(|err| {
+                .ok_or(ApiError::UnableToParseResponse)?;
+            let quote_asset_volume_value = filter_decimal_str(quote_asset_volume_str);
+            let quote_asset_volume =
+                quote_asset_volume_value.parse::<Decimal>().map_err(|err| {
                     tracing::error!("Unable to parse Decimal for quote_asset_volume: {}", err);
                     ApiError::UnableToParseResponse
                 })?;
@@ -173,6 +191,13 @@ async fn klines_impl(
     Ok(output)
 }
 
+fn filter_decimal_str(string: &str) -> String {
+    string
+        .chars()
+        .filter(|c| c.is_numeric() || c == &'.')
+        .collect::<String>()
+}
+
 #[async_trait]
 impl KlinesEndpoint for MexcSpotApiClient {
     async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
@@ -189,8 +214,8 @@ impl KlinesEndpoint for MexcSpotApiClientWithAuthentication {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Duration;
     use super::*;
+    use chrono::Duration;
 
     #[tokio::test]
     async fn test_klines() {
@@ -205,7 +230,6 @@ mod tests {
         let result = client.klines(params).await;
         assert!(result.is_ok());
     }
-
 
     #[tokio::test]
     async fn test_klines_with_time_range() {
