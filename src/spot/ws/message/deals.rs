@@ -54,9 +54,9 @@ pub(crate) fn channel_message_to_spot_deals_message(
         .iter()
         .map(|deal| SpotDeal {
             symbol: symbol.clone(),
-            price: deal.price.clone(),
-            quantity: deal.quantity.clone(),
-            timestamp: deal.timestamp.clone(),
+            price: deal.price,
+            quantity: deal.quantity,
+            timestamp: deal.timestamp,
             trade_type: deal.trade_type,
         })
         .collect();

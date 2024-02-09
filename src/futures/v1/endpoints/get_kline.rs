@@ -1,11 +1,13 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, TimeZone, Utc};
-use reqwest::Client;
-use crate::futures::{MexcFuturesApiClient, MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
 use crate::futures::response::ApiResponse;
 use crate::futures::result::ApiResult;
 use crate::futures::v1::models::{Kline, KlineInterval};
+use crate::futures::{
+    MexcFuturesApiClient, MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint,
+};
+use async_trait::async_trait;
+use chrono::{DateTime, TimeZone, Utc};
+use reqwest::Client;
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct GetKlineParams<'a> {
@@ -55,8 +57,16 @@ pub trait GetKline {
     async fn get_kline(&self, params: GetKlineParams<'_>) -> ApiResult<GetKlineOutput>;
 }
 
-async fn default_impl(endpoint: &MexcFuturesApiEndpoint, reqwest: &Client, params: GetKlineParams<'_>) -> ApiResult<GetKlineOutput> {
-    let url = format!("{}/api/v1/contract/kline/{}", endpoint.as_ref(), params.symbol);
+async fn default_impl(
+    endpoint: &MexcFuturesApiEndpoint,
+    reqwest: &Client,
+    params: GetKlineParams<'_>,
+) -> ApiResult<GetKlineOutput> {
+    let url = format!(
+        "{}/api/v1/contract/kline/{}",
+        endpoint.as_ref(),
+        params.symbol
+    );
     let query = GetKlineQuery::from(params);
     let response = reqwest.get(&url).query(&query).send().await?;
     let api_response = response.json::<ApiResponse<KlineData>>().await?;
@@ -67,12 +77,12 @@ async fn default_impl(endpoint: &MexcFuturesApiEndpoint, reqwest: &Client, param
     for i in 0..amount_of_entries {
         let kline = Kline {
             time: Utc.timestamp_opt(data.time[i], 0).unwrap(),
-            open: data.open[i].clone(),
-            close: data.close[i].clone(),
-            high: data.high[i].clone(),
-            low: data.low[i].clone(),
-            volume: data.vol[i].clone(),
-            amount: data.amount[i].clone(),
+            open: data.open[i],
+            close: data.close[i],
+            high: data.high[i],
+            low: data.low[i],
+            volume: data.vol[i],
+            amount: data.amount[i],
         };
         klines.push(kline);
     }
