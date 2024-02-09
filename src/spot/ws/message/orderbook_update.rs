@@ -17,7 +17,7 @@ pub(crate) struct RawOrderData {
 #[derive(Debug)]
 pub struct OrderbookUpdateMessage {
     pub symbol: String,
-    pub version: u128,
+    pub version: u64,
     pub asks: Vec<PriceAndQuantity>,
     pub bids: Vec<PriceAndQuantity>,
 }
