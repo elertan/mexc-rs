@@ -1,5 +1,7 @@
 use rust_decimal::Decimal;
 
+use crate::spot::v3::depth::PriceAndQuantity;
+
 use super::{RawChannelMessage, RawChannelMessageData, RawEventChannelMessageData};
 
 #[allow(non_snake_case)]
@@ -12,18 +14,12 @@ pub(crate) struct RawOrderData {
     pub quantity: Decimal,
 }
 
-#[derive(Debug, Clone)]
-pub struct OrderUpdateMessage {
-    pub price: Decimal,
-    pub quantity: Decimal,
-}
-
 #[derive(Debug)]
 pub struct OrderbookUpdateMessage {
     pub symbol: String,
     pub version: u128,
-    pub asks: Vec<OrderUpdateMessage>,
-    pub bids: Vec<OrderUpdateMessage>,
+    pub asks: Vec<PriceAndQuantity>,
+    pub bids: Vec<PriceAndQuantity>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -53,7 +49,7 @@ pub(crate) fn channel_message_to_spot_orderbook_update_message(
         asks: match asks {
             Some(asks) => asks
                 .iter()
-                .map(|raw| OrderUpdateMessage {
+                .map(|raw| PriceAndQuantity {
                     price: raw.price,
                     quantity: raw.quantity,
                 })
@@ -63,7 +59,7 @@ pub(crate) fn channel_message_to_spot_orderbook_update_message(
         bids: match bids {
             Some(bids) => bids
                 .iter()
-                .map(|raw| OrderUpdateMessage {
+                .map(|raw| PriceAndQuantity {
                     price: raw.price,
                     quantity: raw.quantity,
                 })
