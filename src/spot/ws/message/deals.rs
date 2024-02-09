@@ -1,6 +1,5 @@
 use crate::spot::ws::message::{
     RawChannelMessage, RawChannelMessageData, RawEventChannelMessageData,
-    RawEventEventChannelMessageData,
 };
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
@@ -47,7 +46,7 @@ pub(crate) fn channel_message_to_spot_deals_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };
-    let RawEventEventChannelMessageData::Deals(deals) = &event.event else {
+    let RawEventChannelMessageData::Deals{deals, .. } = &event else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };
 

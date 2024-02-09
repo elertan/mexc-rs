@@ -1,10 +1,9 @@
 use crate::spot::v3::enums::KlineInterval;
-use crate::spot::ws::message::{
-    RawChannelMessage, RawChannelMessageData, RawEventChannelMessageData,
-    RawEventEventChannelMessageData,
-};
+use crate::spot::ws::message::{RawChannelMessage, RawChannelMessageData};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
+
+use super::RawEventChannelMessageData;
 
 #[allow(non_snake_case)]
 #[derive(Debug, serde::Deserialize)]
@@ -133,21 +132,21 @@ pub(crate) fn channel_message_to_spot_kline_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
-    let RawEventEventChannelMessageData::Kline(kline) = &event.event else {
+    let RawEventChannelMessageData::Kline{k, .. } = &event else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
 
     let message = SpotKlineMessage {
         symbol: symbol.clone(),
-        interval: kline.i,
-        end_time: kline.T,
-        volume: kline.a,
-        close: kline.c,
-        high: kline.h,
-        low: kline.l,
-        open: kline.o,
-        start_time: kline.t,
-        quantity: kline.v,
+        interval: k.i,
+        end_time: k.T,
+        volume: k.a,
+        close: k.c,
+        high: k.h,
+        low: k.l,
+        open: k.o,
+        start_time: k.t,
+        quantity: k.v,
         timestamp: channel_message.timestamp,
     };
     Ok(message)

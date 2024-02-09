@@ -16,11 +16,16 @@ use crate::spot::ws::message::kline::{
 };
 use chrono::{DateTime, Utc};
 
+use self::orderbook_update::{
+    channel_message_to_spot_orderbook_update_message, OrderbookUpdateMessage, RawOrderData,
+};
+
 pub mod account_deals;
 pub mod account_orders;
 pub mod account_update;
 pub mod deals;
 pub mod kline;
+pub mod orderbook_update;
 
 #[derive(Debug)]
 pub enum Message {
@@ -29,6 +34,7 @@ pub enum Message {
     AccountOrders(AccountOrdersMessage),
     Deals(SpotDealsMessage),
     Kline(SpotKlineMessage),
+    OrderbookUpdate(OrderbookUpdateMessage),
 }
 
 impl TryFrom<&RawMessage> for Message {
@@ -38,27 +44,33 @@ impl TryFrom<&RawMessage> for Message {
         match value {
             RawMessage::IdCodeMessage(_) => Err(()),
             RawMessage::ChannelMessage(raw_channel_message) => match &raw_channel_message.data {
-                RawChannelMessageData::AccountDeals(raw) => Ok(Message::AccountDeals(
+                RawChannelMessageData::AccountDeals(_) => Ok(Message::AccountDeals(
                     channel_message_to_account_deals_message(raw_channel_message)
                         .map_err(|_| ())?,
                 )),
-                RawChannelMessageData::AccountUpdate(raw) => Ok(Message::AccountUpdate(
+                RawChannelMessageData::AccountUpdate(_) => Ok(Message::AccountUpdate(
                     channel_message_to_account_update_message(raw_channel_message)
                         .map_err(|_| ())?,
                 )),
-                RawChannelMessageData::AccountOrders(raw) => Ok(Message::AccountOrders(
+                RawChannelMessageData::AccountOrders(_) => Ok(Message::AccountOrders(
                     channel_message_to_account_orders_message(raw_channel_message)
                         .map_err(|_| ())?,
                 )),
-                RawChannelMessageData::Event(raw_event) => match &raw_event.event {
-                    RawEventEventChannelMessageData::Deals(raw) => Ok(Message::Deals(
+                RawChannelMessageData::Event(event) => match &event {
+                    RawEventChannelMessageData::Deals { .. } => Ok(Message::Deals(
                         channel_message_to_spot_deals_message(raw_channel_message)
                             .map_err(|_| ())?,
                     )),
-                    RawEventEventChannelMessageData::Kline(raw) => Ok(Message::Kline(
+                    RawEventChannelMessageData::Kline { .. } => Ok(Message::Kline(
                         channel_message_to_spot_kline_message(raw_channel_message)
                             .map_err(|_| ())?,
                     )),
+                    RawEventChannelMessageData::OrdersUpdate { .. } => {
+                        Ok(Message::OrderbookUpdate(
+                            channel_message_to_spot_orderbook_update_message(raw_channel_message)
+                                .map_err(|_| ())?,
+                        ))
+                    }
                 },
             },
         }
@@ -105,19 +117,26 @@ pub(crate) enum RawChannelMessageData {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct RawEventChannelMessageData {
-    #[serde(flatten)]
-    pub event: RawEventEventChannelMessageData,
-    #[serde(rename = "e")]
-    pub r#type: String,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) enum RawEventEventChannelMessageData {
-    Deals(Vec<RawSpotDealData>),
-    #[serde(rename = "k")]
-    Kline(RawKlineData),
+#[serde(untagged)]
+pub(crate) enum RawEventChannelMessageData {
+    Deals {
+        deals: Vec<RawSpotDealData>,
+        #[serde(rename = "e")]
+        r#type: String,
+    },
+    Kline {
+        k: RawKlineData,
+        #[serde(rename = "e")]
+        r#type: String,
+    },
+    OrdersUpdate {
+        asks: Option<Vec<RawOrderData>>,
+        bids: Option<Vec<RawOrderData>>,
+        #[serde(rename = "r")]
+        version: String,
+        #[serde(rename = "e")]
+        r#type: String,
+    },
 }
 
 #[cfg(test)]
@@ -170,6 +189,19 @@ mod tests {
 
         let result: Result<RawEventChannelMessageData, _> =
             serde_path_to_error::deserialize(deserializer);
+        eprintln!("{:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn raw_orders_update_data() {
+        let json = r#"
+            { "d":{ "r":"3407459756", "e":"spot@public.increase.depth.v3.api", "asks":[{ "p":"20290.89", "v":"0.000000"}]}, "c": "spot@public.increase.depth.v3.api@BTCUSDT", "s":"BTCUSDT", "t":1661932660144}
+        "#;
+
+        let deserializer = &mut serde_json::Deserializer::from_str(json);
+
+        let result: Result<RawChannelMessage, _> = serde_path_to_error::deserialize(deserializer);
         eprintln!("{:?}", result);
         assert!(result.is_ok());
     }

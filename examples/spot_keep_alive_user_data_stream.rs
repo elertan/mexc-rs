@@ -1,16 +1,16 @@
-use rust_decimal::Decimal;
 use dotenv::dotenv;
-use mexc_rs::spot::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
-use mexc_rs::spot::v3::enums::{OrderSide, OrderType};
-use mexc_rs::spot::v3::order::{OrderEndpoint, OrderParams};
-use mexc_rs::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
-use std::str::FromStr;
 use mexc_rs::spot::v3::create_user_data_stream::CreateUserDataStreamEndpoint;
-use mexc_rs::spot::v3::keep_alive_user_data_stream::{KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams};
+use mexc_rs::spot::v3::keep_alive_user_data_stream::{
+    KeepAliveUserDataStreamEndpoint, KeepAliveUserDataStreamParams,
+};
+use mexc_rs::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    std::env::set_var("RUST_LOG", "mexc_rs=debug,spot_keep_alive_user_data_stream=trace");
+    std::env::set_var(
+        "RUST_LOG",
+        "mexc_rs=debug,spot_keep_alive_user_data_stream=trace",
+    );
     tracing_subscriber::fmt::init();
 
     dotenv().ok();
@@ -27,9 +27,11 @@ async fn main() -> anyhow::Result<()> {
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     tracing::info!("Sending keep alive...");
-    let output = client.keep_alive_user_data_stream(KeepAliveUserDataStreamParams {
-        listen_key: &output.listen_key
-    }).await?;
+    let output = client
+        .keep_alive_user_data_stream(KeepAliveUserDataStreamParams {
+            listen_key: &output.listen_key,
+        })
+        .await?;
     tracing::info!("Keep alive response: {:?}", &output);
 
     tracing::info!("Done!");

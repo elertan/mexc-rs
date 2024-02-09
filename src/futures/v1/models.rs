@@ -1,5 +1,5 @@
-use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,21 +48,48 @@ pub struct OpenPosition {
     pub update_time: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum PositionType {
     Long = 1,
     Short = 2,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OpenType {
     Isolated = 1,
     Cross = 2,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum PositionState {
     Holding = 1,
@@ -107,7 +134,16 @@ pub struct OpenOrder {
     pub take_profit_price: Option<Decimal>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OrderSide {
     OpenLong = 1,
@@ -116,7 +152,16 @@ pub enum OrderSide {
     CloseLong = 4,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OrderCategory {
     LimitOrder = 1,
@@ -125,7 +170,16 @@ pub enum OrderCategory {
     ADLReduction = 4,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OrderType {
     PriceLimitedOrder = 1,
@@ -136,7 +190,16 @@ pub enum OrderType {
     ConvertMarketPriceToCurrentPrice = 6,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OrderState {
     Uninformed = 1,
@@ -146,7 +209,16 @@ pub enum OrderState {
     Invalid = 5,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum OrderErrorCode {
     Normal = 0,
@@ -154,17 +226,28 @@ pub enum OrderErrorCode {
     AccountBalanceIsInsufficient = 2,
     ThePositionDoesNotExist = 3,
     PositionInsufficient = 4,
-    ForLongPositionsTheOrderPriceIsLessThanTheClosePriceWhileForShortPositionsTheOrderPriceIsGreaterThanTheClosePrice = 5,
-    WhenOpeningLongTheClosePriceIsMoreThanTheFairPriceWhileWhenOpeningShortTheClosePriceIsLessThanTheFairPrice = 6,
+    ForLongPositionsTheOrderPriceIsLessThanTheClosePriceWhileForShortPositionsTheOrderPriceIsGreaterThanTheClosePrice =
+        5,
+    WhenOpeningLongTheClosePriceIsMoreThanTheFairPriceWhileWhenOpeningShortTheClosePriceIsLessThanTheFairPrice =
+        6,
     ExceedRiskQuotaRestrictions = 7,
     SystemCancelled = 8,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, serde_repr::Serialize_repr, Copy, Clone)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    serde_repr::Serialize_repr,
+    Copy,
+    Clone,
+)]
 #[repr(i8)]
 pub enum PositionMode {
     Hedge = 1,
-    OneWay = 2
+    OneWay = 2,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -252,7 +335,7 @@ mod tests {
         }
         "#;
 
-        let open_position: OpenPosition = serde_json::from_str(json).unwrap();
+        let _open_position: OpenPosition = serde_json::from_str(json).unwrap();
     }
 
     #[test]
@@ -287,6 +370,6 @@ mod tests {
         }
         "#;
 
-        let open_order: OpenOrder = serde_json::from_str(json).unwrap();
+        let _open_order: OpenOrder = serde_json::from_str(json).unwrap();
     }
 }

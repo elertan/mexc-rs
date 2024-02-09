@@ -7,6 +7,7 @@ pub enum Topic {
     AccountUpdate,
     Deals(DealsTopic),
     Kline(KlineTopic),
+    Depth(DepthTopic),
 }
 
 impl Topic {
@@ -17,6 +18,7 @@ impl Topic {
             Topic::AccountUpdate => true,
             Topic::Deals(_) => false,
             Topic::Kline(_) => false,
+            Topic::Depth(_) => false,
         }
     }
 
@@ -33,6 +35,10 @@ impl Topic {
                 "spot@public.kline.v3.api@{symbol}@{interval}",
                 symbol = kline_topic.symbol,
                 interval = kline_topic.interval.as_ref()
+            ),
+            Topic::Depth(depth_topic) => format!(
+                "spot@public.increase.depth.v3.api@{symbol}",
+                symbol = depth_topic.symbol
             ),
         }
     }
@@ -58,5 +64,16 @@ pub struct KlineTopic {
 impl KlineTopic {
     pub fn new(symbol: String, interval: KlineIntervalTopic) -> Self {
         Self { symbol, interval }
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct DepthTopic {
+    pub symbol: String,
+}
+
+impl DepthTopic {
+    pub fn new(symbol: String) -> Self {
+        Self { symbol }
     }
 }
