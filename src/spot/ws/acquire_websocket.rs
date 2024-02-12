@@ -40,10 +40,11 @@ impl AcquireWebsocketsForTopicsParams {
         }
     }
 
-    pub fn for_topic(mut self, topic: Topic) -> Self {
-        self.for_topics.push(topic);
-        self
-    }
+    // not used
+    // pub fn for_topic(mut self, topic: Topic) -> Self {
+    //     self.for_topics.push(topic);
+    //     self
+    // }
 
     pub fn for_topics(mut self, topics: Vec<Topic>) -> Self {
         self.for_topics.extend(topics);
@@ -200,7 +201,7 @@ async fn acquire_websockets_for_public_topics(
     // Check whether one of the websockets have enough space to accommodate the topics.
     let mut websocket_that_can_accommodate = None;
     for websocket in inner.websockets.iter() {
-        if websocket.auth.as_ref() == None
+        if websocket.auth.is_none()
             && websocket.topics.read().await.len() + public_topics.len() <= 30
         {
             websocket_that_can_accommodate = Some(websocket.clone());
@@ -232,17 +233,14 @@ async fn acquire_websockets_for_public_topics(
                 .collect());
         } else {
             // This is another socket which we can put the topics onto
-            return Ok([(
-                websocket_entry.clone(),
-                topics_not_covered_matching_websockets,
-            )]
-            .into_iter()
-            .chain(matching_websockets.into_iter())
-            .map(|(ws_entry, topics)| AcquiredWebsocket {
-                websocket_entry: ws_entry.clone(),
-                for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
-            })
-            .collect());
+            return Ok([(websocket_entry, topics_not_covered_matching_websockets)]
+                .into_iter()
+                .chain(matching_websockets.into_iter())
+                .map(|(ws_entry, topics)| AcquiredWebsocket {
+                    websocket_entry: ws_entry,
+                    for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
+                })
+                .collect());
         }
     }
 
@@ -262,7 +260,7 @@ async fn acquire_websockets_for_public_topics(
         .into_iter()
         .chain(matching_websockets.into_iter())
         .map(|(ws_entry, topics)| AcquiredWebsocket {
-            websocket_entry: ws_entry.clone(),
+            websocket_entry: ws_entry,
             for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
         })
         .collect())
@@ -364,17 +362,14 @@ async fn acquire_websockets_for_private_topics(
                 .collect());
         } else {
             // This is another socket which we can put the topics onto
-            return Ok([(
-                websocket_entry.clone(),
-                topics_not_covered_matching_websockets,
-            )]
-            .into_iter()
-            .chain(matching_websockets.into_iter())
-            .map(|(ws_entry, topics)| AcquiredWebsocket {
-                websocket_entry: ws_entry.clone(),
-                for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
-            })
-            .collect());
+            return Ok([(websocket_entry, topics_not_covered_matching_websockets)]
+                .into_iter()
+                .chain(matching_websockets.into_iter())
+                .map(|(ws_entry, topics)| AcquiredWebsocket {
+                    websocket_entry: ws_entry,
+                    for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
+                })
+                .collect());
         }
     }
 
@@ -400,7 +395,7 @@ async fn acquire_websockets_for_private_topics(
         .into_iter()
         .chain(matching_websockets.into_iter())
         .map(|(ws_entry, topics)| AcquiredWebsocket {
-            websocket_entry: ws_entry.clone(),
+            websocket_entry: ws_entry,
             for_topics: topics.iter().map(|t| (*t).clone()).collect::<Vec<Topic>>(),
         })
         .collect())
@@ -473,18 +468,11 @@ async fn create_private_websocket(
         cancellation_token.clone(),
         websocket_id,
     );
-    spawn_websocket_ping_task(
-        this.clone(),
-        tx.clone(),
-        cancellation_token.clone(),
-        websocket_id,
-    );
+    spawn_websocket_ping_task(tx.clone(), cancellation_token.clone());
     spawn_websocket_keepalive_task(
-        this.clone(),
         spot_client_with_auth,
         user_data_stream_output.listen_key.clone(),
-        cancellation_token.clone(),
-        websocket_id,
+        cancellation_token,
     );
 
     inner
@@ -538,12 +526,7 @@ async fn create_public_websocket(
         cancellation_token.clone(),
         websocket_id,
     );
-    spawn_websocket_ping_task(
-        this.clone(),
-        tx.clone(),
-        cancellation_token.clone(),
-        websocket_id,
-    );
+    spawn_websocket_ping_task(tx.clone(), cancellation_token);
 
     let websocket_entry = WebsocketEntry {
         id: websocket_id,
@@ -613,12 +596,7 @@ async fn reconnect_websocket(
         cancellation_token.clone(),
         websocket_id,
     );
-    spawn_websocket_ping_task(
-        this.clone(),
-        tx.clone(),
-        cancellation_token.clone(),
-        websocket_id,
-    );
+    spawn_websocket_ping_task(tx.clone(), cancellation_token.clone());
     if let Some(listen_key) = &websocket.listen_key {
         let spot_client_with_auth = MexcSpotApiClientWithAuthentication::new(
             this.spot_api_endpoint.as_ref().clone(),
@@ -636,11 +614,9 @@ async fn reconnect_websocket(
                 .clone(),
         );
         spawn_websocket_keepalive_task(
-            this.clone(),
             spot_client_with_auth,
             listen_key.clone(),
             cancellation_token.clone(),
-            websocket_id,
         );
     }
 
@@ -842,10 +818,8 @@ fn spawn_websocket_receiver_task(
 }
 
 fn spawn_websocket_ping_task(
-    this: Arc<MexcSpotWebsocketClient>,
     sender: Sender<SendableMessage>,
     cancellation_token: CancellationToken,
-    websocket_id: Uuid,
 ) {
     tokio::spawn(async move {
         loop {
@@ -869,11 +843,9 @@ fn spawn_websocket_ping_task(
 }
 
 fn spawn_websocket_keepalive_task(
-    this: Arc<MexcSpotWebsocketClient>,
     spot_client_with_auth: MexcSpotApiClientWithAuthentication,
     listen_key: String,
     cancellation_token: CancellationToken,
-    websocket_id: Uuid,
 ) {
     tokio::spawn(async move {
         loop {

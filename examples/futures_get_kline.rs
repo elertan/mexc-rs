@@ -1,7 +1,6 @@
-use mexc_rs::futures::MexcFuturesApiClient;
 use mexc_rs::futures::v1::endpoints::get_kline::{GetKline, GetKlineParams};
-use mexc_rs::futures::v1::endpoints::get_server_time::GetServerTime;
 use mexc_rs::futures::v1::models::KlineInterval;
+use mexc_rs::futures::MexcFuturesApiClient;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

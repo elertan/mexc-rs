@@ -4,8 +4,6 @@ use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSp
 use async_trait::async_trait;
 use chrono::{DateTime, TimeZone, Utc};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Deserializer};
-use serde_json::Value;
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -1,10 +1,10 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use crate::futures::{MexcFuturesApiClientWithAuthentication};
 use crate::futures::auth::SignRequestParamsKind;
 use crate::futures::response::ApiResponse;
 use crate::futures::result::ApiResult;
 use crate::futures::v1::models::{OpenType, OrderSide, OrderType, PositionMode};
+use crate::futures::MexcFuturesApiClientWithAuthentication;
+use async_trait::async_trait;
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct OrderParams<'a> {
@@ -57,17 +57,17 @@ impl<'a> From<&OrderParams<'a>> for OrderPayload<'a> {
     fn from(params: &OrderParams<'a>) -> Self {
         OrderPayload {
             symbol: params.symbol,
-            price: params.price.clone(),
-            volume: params.volume.clone(),
+            price: params.price,
+            volume: params.volume,
             leverage: params.leverage,
-            side: params.side.clone(),
-            order_type: params.order_type.clone(),
-            open_type: params.open_type.clone(),
+            side: params.side,
+            order_type: params.order_type,
+            open_type: params.open_type,
             position_id: params.position_id,
             external_order_id: params.external_order_id,
-            stop_loss_price: params.stop_loss_price.clone(),
-            take_profit_price: params.take_profit_price.clone(),
-            position_mode: params.position_mode.clone(),
+            stop_loss_price: params.stop_loss_price,
+            take_profit_price: params.take_profit_price,
+            position_mode: params.position_mode,
             reduce_only: params.reduce_only,
         }
     }
@@ -79,7 +79,13 @@ impl Order for MexcFuturesApiClientWithAuthentication {
         let url = format!("{}/api/v1/private/order/submit", self.endpoint.as_ref());
         let payload = OrderPayload::from(&params);
         let auth_header_map = self.get_auth_header_map(&payload, SignRequestParamsKind::Body)?;
-        let response = self.reqwest_client.post(&url).headers(auth_header_map).json(&payload).send().await?;
+        let response = self
+            .reqwest_client
+            .post(&url)
+            .headers(auth_header_map)
+            .json(&payload)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<i64>>().await?;
         let order_id = api_response.into_api_result()?;
 

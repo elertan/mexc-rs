@@ -1,10 +1,8 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
-use crate::spot::v3::{ApiResponse, ApiResult};
-use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 use crate::spot::v3::models::Order;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 
 #[derive(Debug)]
 pub struct GetOpenOrdersParams<'a> {
@@ -37,7 +35,6 @@ pub struct GetOrderOutput {
     pub orders: Vec<Order>,
 }
 
-
 #[async_trait]
 pub trait GetOpenOrdersEndpoint {
     async fn get_open_orders(&self, params: GetOpenOrdersParams<'_>) -> ApiResult<GetOrderOutput>;
@@ -50,13 +47,16 @@ impl GetOpenOrdersEndpoint for MexcSpotApiClientWithAuthentication {
         let query = GetOrderQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
-        let response = self.reqwest_client.get(&endpoint).query(&query_with_signature).send().await?;
+        let response = self
+            .reqwest_client
+            .get(&endpoint)
+            .query(&query_with_signature)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<Vec<Order>>>().await?;
         let orders = api_response.into_api_result()?;
 
-        let output = GetOrderOutput {
-            orders,
-        };
+        let output = GetOrderOutput { orders };
 
         Ok(output)
     }
@@ -69,9 +69,7 @@ mod tests {
     #[tokio::test]
     async fn get_open_orders() {
         let client = MexcSpotApiClientWithAuthentication::new_for_test();
-        let params = GetOpenOrdersParams {
-            symbol: "KASUSDT",
-        };
+        let params = GetOpenOrdersParams { symbol: "KASUSDT" };
         let result = client.get_open_orders(params).await;
         eprintln!("{:?}", &result);
         assert!(result.is_ok());

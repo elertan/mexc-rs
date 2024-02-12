@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
-use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct CancelAllOpenOrdersOnASymbolParams<'a> {
@@ -33,7 +33,7 @@ impl<'a> From<CancelAllOpenOrdersOnASymbolParams<'a>> for CancelAllOpenOrdersOnA
 
 #[derive(Debug)]
 pub struct CancelAllOpenOrdersOnASymbolOutput {
-    pub canceled_orders: Vec<CanceledOrder>
+    pub canceled_orders: Vec<CanceledOrder>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -56,26 +56,34 @@ pub struct CanceledOrder {
     pub side: OrderSide,
 }
 
-
 #[async_trait]
 pub trait CancelAllOpenOrdersOnASymbolEndpoint {
-    async fn cancel_all_open_orders_on_a_symbol(&self, params: CancelAllOpenOrdersOnASymbolParams<'_>) -> ApiResult<CancelAllOpenOrdersOnASymbolOutput>;
+    async fn cancel_all_open_orders_on_a_symbol(
+        &self,
+        params: CancelAllOpenOrdersOnASymbolParams<'_>,
+    ) -> ApiResult<CancelAllOpenOrdersOnASymbolOutput>;
 }
 
 #[async_trait]
 impl CancelAllOpenOrdersOnASymbolEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn cancel_all_open_orders_on_a_symbol(&self, params: CancelAllOpenOrdersOnASymbolParams<'_>) -> ApiResult<CancelAllOpenOrdersOnASymbolOutput> {
+    async fn cancel_all_open_orders_on_a_symbol(
+        &self,
+        params: CancelAllOpenOrdersOnASymbolParams<'_>,
+    ) -> ApiResult<CancelAllOpenOrdersOnASymbolOutput> {
         let endpoint = format!("{}/api/v3/openOrders", self.endpoint.as_ref());
         let query = CancelAllOpenOrdersOnASymbolQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
-        let response = self.reqwest_client.delete(&endpoint).query(&query_with_signature).send().await?;
+        let response = self
+            .reqwest_client
+            .delete(&endpoint)
+            .query(&query_with_signature)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<Vec<CanceledOrder>>>().await?;
         let canceled_orders = api_response.into_api_result()?;
 
-        Ok(CancelAllOpenOrdersOnASymbolOutput {
-            canceled_orders
-        })
+        Ok(CancelAllOpenOrdersOnASymbolOutput { canceled_orders })
     }
 }
 
@@ -86,9 +94,7 @@ mod tests {
     #[tokio::test]
     async fn cancel_order() {
         let client = MexcSpotApiClientWithAuthentication::new_for_test();
-        let params = CancelAllOpenOrdersOnASymbolParams {
-            symbol: "KASUSDT",
-        };
+        let params = CancelAllOpenOrdersOnASymbolParams { symbol: "KASUSDT" };
         let result = client.cancel_all_open_orders_on_a_symbol(params).await;
         assert!(result.is_ok());
     }
@@ -99,6 +105,6 @@ mod tests {
             [{"symbol":"KASUSDT","orderId":"C01__333180898079965185","price":"0.001","origQty":"5000","type":"LIMIT","side":"BUY","executedQty":"0","cummulativeQuoteQty":"0","status":"NEW"}]
         "#;
         // serde path to error
-        let canceled_orders = serde_json::from_str::<Vec<CanceledOrder>>(json).unwrap();
+        let _canceled_orders = serde_json::from_str::<Vec<CanceledOrder>>(json).unwrap();
     }
 }
