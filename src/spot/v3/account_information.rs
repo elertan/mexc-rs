@@ -7,10 +7,10 @@ use crate::spot::v3::{ApiResponse, ApiResult};
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountInformationOutput {
-    pub maker_commission: Decimal,
-    pub taker_commission: Decimal,
-    pub buyer_commission: Decimal,
-    pub seller_commission: Decimal,
+    pub maker_commission: Option<Decimal>,
+    pub taker_commission: Option<Decimal>,
+    pub buyer_commission: Option<Decimal>,
+    pub seller_commission: Option<Decimal>,
     pub can_trade: bool,
     pub can_withdraw: bool,
     pub can_deposit: bool,
