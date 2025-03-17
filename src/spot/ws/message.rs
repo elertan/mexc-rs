@@ -78,6 +78,7 @@ impl TryFrom<&RawMessage> for Message {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(clippy::large_enum_variant, dead_code)]
 #[serde(untagged)]
 pub(crate) enum RawMessage {
     IdCodeMessage(RawIdCodeMessage),
@@ -86,6 +87,7 @@ pub(crate) enum RawMessage {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub(crate) struct RawIdCodeMessage {
     pub id: i32,
     pub code: i32,
@@ -95,6 +97,7 @@ pub(crate) struct RawIdCodeMessage {
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub(crate) struct RawChannelMessage {
     #[serde(rename = "c")]
     pub channel: String,
@@ -118,6 +121,7 @@ pub(crate) enum RawChannelMessageData {
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
+#[allow(dead_code)]
 pub(crate) enum RawEventChannelMessageData {
     Deals {
         deals: Vec<RawSpotDealData>,

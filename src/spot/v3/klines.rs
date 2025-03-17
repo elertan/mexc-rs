@@ -79,6 +79,7 @@ async fn klines_impl(
         return Err(ApiError::UnableToParseResponse);
     };
 
+    #[allow(clippy::get_first)]
     let klines = kline_values
         .into_iter()
         .map(|kline_value| {
@@ -231,7 +232,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_klines_with_time_range() {
-        let start_time = Utc.ymd(2023, 9, 1).and_hms(0, 0, 0);
+        let start_time = Utc.with_ymd_and_hms(2023, 9, 1, 0, 0, 0).unwrap();
         let end_time = start_time + Duration::minutes(1000);
         eprintln!("start_time: {}", start_time);
         eprintln!("end_time: {}", end_time);

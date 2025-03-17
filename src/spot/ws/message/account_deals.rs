@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct RawAccountDealsData {
     pub S: u8,
     #[serde(with = "chrono::serde::ts_milliseconds")]
