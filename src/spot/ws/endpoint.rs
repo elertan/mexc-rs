@@ -17,6 +17,6 @@ impl AsRef<str> for MexcWebsocketEndpoint {
 
 impl fmt::Display for MexcWebsocketEndpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_ref())  // Assure-toi que `as_ref()` retourne un type convertible en `Display`
+        write!(f, "{}", self.as_ref())
     }
 }
