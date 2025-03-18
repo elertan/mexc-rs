@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
-use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use crate::spot::MexcSpotApiTrait;
 use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::TradeType;
 
@@ -39,13 +39,11 @@ pub trait TradesEndpoint {
     async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput>;
 }
 
-async fn trades_impl(
-    endpoint: &MexcSpotApiEndpoint,
-    client: &reqwest::Client,
-    params: TradesParams<'_>,
-) -> ApiResult<TradesOutput> {
-    let endpoint = format!("{}/api/v3/trades", endpoint.as_ref());
-    let response = client.get(&endpoint).query(&params).send().await?;
+#[async_trait]
+impl<T: MexcSpotApiTrait + Sync> TradesEndpoint for T {
+    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
+    let endpoint = format!("{}/api/v3/trades", self.endpoint().as_ref());
+    let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
     let api_response = response.json::<ApiResponse<Vec<Trade>>>().await?;
     let trades = api_response.into_api_result()?;
 
@@ -53,23 +51,12 @@ async fn trades_impl(
         trades
     })
 }
-
-#[async_trait]
-impl TradesEndpoint for MexcSpotApiClient {
-    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
-        trades_impl(&self.endpoint, &self.reqwest_client, params).await
-    }
-}
-
-#[async_trait]
-impl TradesEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
-        trades_impl(&self.endpoint, &self.reqwest_client, params).await
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::spot::MexcSpotApiClient;
+
     use super::*;
 
     #[tokio::test]
