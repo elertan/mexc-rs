@@ -201,7 +201,6 @@ mod tests {
     use crate::spot::MexcSpotApiClient;
 
     use super::*;
-    use chrono::Duration;
 
     #[tokio::test]
     async fn test_klines() {
@@ -218,28 +217,53 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_klines_with_time_range() {
+    async fn test_klines_with_time_start() {
         let start_time = Utc.with_ymd_and_hms(2023, 9, 1, 0, 0, 0).unwrap();
-        let end_time = start_time + Duration::minutes(1000);
         eprintln!("start_time: {}", start_time);
-        eprintln!("end_time: {}", end_time);
-
-        // BTCUSDT&interval=1m&startTime=1695560040000&endTime=1695560940000
-        // BTCUSDT&interval=1m&startTime=1598918400000&endTime=1598978400000
+        let nb_element: usize = 100;
 
         let client = MexcSpotApiClient::default();
         let params = KlinesParams {
             symbol: "BTCUSDT",
             interval: KlineInterval::OneMinute,
             start_time: Some(start_time),
-            end_time: Some(end_time),
-            limit: Some(1000),
+            end_time: None,
+            limit: Some(nb_element.try_into().unwrap()),
         };
         let result = client.klines(params).await;
         assert!(result.is_ok());
 
         let output = result.unwrap();
         eprintln!("len: {}", output.klines.len());
+        assert_eq!(output.klines.len(), nb_element);
+
+        let first_kline = output.klines.first().unwrap();
+        eprintln!("first kline time: {}", first_kline.open_time);
+
+        let last_kline = output.klines.last().unwrap();
+        eprintln!("last kline time: {}", last_kline.close_time);
+    }
+
+    #[tokio::test]
+    async fn test_klines_with_end_time() {
+        let end_time = Utc.with_ymd_and_hms(2023, 9, 1, 0, 0, 0).unwrap();
+        eprintln!("end_time: {}", end_time);
+        let nb_element: usize = 100;
+
+        let client = MexcSpotApiClient::default();
+        let params = KlinesParams {
+            symbol: "BTCUSDT",
+            interval: KlineInterval::OneMinute,
+            start_time: None,
+            end_time: Some(end_time),
+            limit: Some(nb_element.try_into().unwrap()),
+        };
+        let result = client.klines(params).await;
+        assert!(result.is_ok());
+
+        let output = result.unwrap();
+        eprintln!("len: {}", output.klines.len());
+        assert_eq!(output.klines.len(), nb_element);
 
         let first_kline = output.klines.first().unwrap();
         eprintln!("first kline time: {}", first_kline.open_time);
