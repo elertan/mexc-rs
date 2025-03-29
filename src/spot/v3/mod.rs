@@ -19,6 +19,7 @@ pub mod klines;
 pub mod models;
 pub mod order;
 pub mod ping;
+pub mod query_order;
 pub mod time;
 pub mod trades;
 
