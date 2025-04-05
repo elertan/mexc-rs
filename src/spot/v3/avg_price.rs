@@ -20,12 +20,12 @@ pub struct AvgOutput {
 #[async_trait]
 pub trait AvgEndpoint {
     /// Order book
-    async fn depth(&self, params: AvgParams<'_>) -> ApiResult<AvgOutput>;
+    async fn avg_price(&self, params: AvgParams<'_>) -> ApiResult<AvgOutput>;
 }
 
 #[async_trait]
 impl<T: MexcSpotApiTrait + Sync> AvgEndpoint for T {
-    async fn depth(&self, params: AvgParams<'_>) -> ApiResult<AvgOutput> {
+    async fn avg_price(&self, params: AvgParams<'_>) -> ApiResult<AvgOutput> {
         let endpoint = format!("{}/api/v3/avgPrice", self.endpoint().as_ref());
         let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
         let api_response = response.json::<ApiResponse<AvgOutput>>().await?;
@@ -47,7 +47,7 @@ mod tests {
         let avg_params = AvgParams {
             symbol: "BTCUSDT"
         };
-        let result = client.depth(avg_params).await;
+        let result = client.avg_price(avg_params).await;
         assert!(result.is_ok());
     }
 }
