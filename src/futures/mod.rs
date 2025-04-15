@@ -115,6 +115,7 @@ impl MexcFuturesApiClientWithAuthentication {
         Ok(header_map)
     }
 
+    #[allow(dead_code)]
     #[cfg(test)]
     fn new_for_test() -> Self {
         dotenv::dotenv().ok();

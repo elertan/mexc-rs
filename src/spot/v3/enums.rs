@@ -63,7 +63,7 @@ pub enum KlineInterval {
     ThirtyMinutes,
 
     /// 1 hour
-    #[serde(rename = "1h")]
+    #[serde(rename = "60m")]
     OneHour,
 
     /// 4 hours
@@ -73,6 +73,10 @@ pub enum KlineInterval {
     /// 1 day
     #[serde(rename = "1d")]
     OneDay,
+
+    /// 1 week
+    #[serde(rename = "1W")]
+    OneWeek,
 
     /// 1 month
     #[serde(rename = "1M")]
@@ -99,5 +103,5 @@ pub enum ChangedType {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TradeType {
     Ask,
-    Bid
+    Bid,
 }

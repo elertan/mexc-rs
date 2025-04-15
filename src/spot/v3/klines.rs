@@ -13,10 +13,10 @@ pub struct KlinesParams<'a> {
     /// Interval
     pub interval: KlineInterval,
     /// Start time
-    #[serde(with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(rename = "startTime", with = "chrono::serde::ts_milliseconds_option")]
     pub start_time: Option<DateTime<Utc>>,
     /// End time
-    #[serde(with = "chrono::serde::ts_milliseconds_option")]
+    #[serde(rename = "endTime", with = "chrono::serde::ts_milliseconds_option")]
     pub end_time: Option<DateTime<Utc>>,
     /// default 500; max 1000
     pub limit: Option<u32>,
@@ -65,6 +65,7 @@ pub trait KlinesEndpoint {
 impl<T: MexcSpotApiTrait + Sync> KlinesEndpoint for T {
     async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         let endpoint = format!("{}/api/v3/klines", self.endpoint().as_ref());
+        
         let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
         let json = response.text().await?;
 
@@ -201,7 +202,6 @@ mod tests {
     use crate::spot::MexcSpotApiClient;
 
     use super::*;
-    use chrono::Duration;
 
     #[tokio::test]
     async fn test_klines() {
@@ -218,33 +218,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_klines_with_time_range() {
+    async fn test_klines_with_start_and_end_time() {
         let start_time = Utc.with_ymd_and_hms(2023, 9, 1, 0, 0, 0).unwrap();
-        let end_time = start_time + Duration::minutes(1000);
-        eprintln!("start_time: {}", start_time);
-        eprintln!("end_time: {}", end_time);
-
-        // BTCUSDT&interval=1m&startTime=1695560040000&endTime=1695560940000
-        // BTCUSDT&interval=1m&startTime=1598918400000&endTime=1598978400000
+        let end_time = Utc.with_ymd_and_hms(2023, 9, 11, 0, 0, 0).unwrap();
+        eprintln!("{} to {}", start_time, end_time);
 
         let client = MexcSpotApiClient::default();
         let params = KlinesParams {
             symbol: "BTCUSDT",
-            interval: KlineInterval::OneMinute,
+            interval: KlineInterval::OneDay,
             start_time: Some(start_time),
             end_time: Some(end_time),
-            limit: Some(1000),
+            limit: Some(10),
         };
         let result = client.klines(params).await;
         assert!(result.is_ok());
 
         let output = result.unwrap();
-        eprintln!("len: {}", output.klines.len());
+        assert_eq!(output.klines.len(), 10);
 
         let first_kline = output.klines.first().unwrap();
-        eprintln!("first kline time: {}", first_kline.open_time);
+        assert_eq!(first_kline.open_time, start_time);
 
         let last_kline = output.klines.last().unwrap();
-        eprintln!("last kline time: {}", last_kline.close_time);
+        assert_eq!(last_kline.close_time, end_time);
     }
 }

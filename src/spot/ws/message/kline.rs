@@ -52,6 +52,10 @@ pub enum KlineIntervalTopic {
     #[serde(rename = "Day1")]
     OneDay,
 
+    /// 1 day
+    #[serde(rename = "Week1")]
+    OneWeek,
+
     /// 1 month
     #[serde(rename = "Month1")]
     OneMonth,
@@ -67,6 +71,7 @@ impl AsRef<str> for KlineIntervalTopic {
             KlineIntervalTopic::OneHour => "Min60",
             KlineIntervalTopic::FourHours => "Hour4",
             KlineIntervalTopic::OneDay => "Day1",
+            KlineIntervalTopic::OneWeek => "Week1",
             KlineIntervalTopic::OneMonth => "Month1",
         }
     }
@@ -82,6 +87,7 @@ impl From<KlineIntervalTopic> for KlineInterval {
             KlineIntervalTopic::OneHour => KlineInterval::OneHour,
             KlineIntervalTopic::FourHours => KlineInterval::FourHours,
             KlineIntervalTopic::OneDay => KlineInterval::OneDay,
+            KlineIntervalTopic::OneWeek => KlineInterval::OneWeek,
             KlineIntervalTopic::OneMonth => KlineInterval::OneMonth,
         }
     }
@@ -97,6 +103,7 @@ impl From<KlineInterval> for KlineIntervalTopic {
             KlineInterval::OneHour => KlineIntervalTopic::OneHour,
             KlineInterval::FourHours => KlineIntervalTopic::FourHours,
             KlineInterval::OneDay => KlineIntervalTopic::OneDay,
+            KlineInterval::OneWeek => KlineIntervalTopic::OneWeek,
             KlineInterval::OneMonth => KlineIntervalTopic::OneMonth,
         }
     }
@@ -132,7 +139,7 @@ pub(crate) fn channel_message_to_spot_kline_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
-    let RawEventChannelMessageData::Kline{k, .. } = &event else {
+    let RawEventChannelMessageData::Kline { k, .. } = &event else {
         return Err(ChannelMessageToSpotKlineMessageError::NoKlineMessage);
     };
 

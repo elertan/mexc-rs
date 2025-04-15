@@ -3,23 +3,25 @@ use num_traits::FromPrimitive;
 use reqwest::StatusCode;
 use crate::spot::SignQueryError;
 
-pub mod models;
+pub mod account_information;
+pub mod avg_price;
+pub mod cancel_all_open_orders_on_a_symbol;
+pub mod cancel_order;
+pub mod create_user_data_stream;
+pub mod default_symbols;
 pub mod depth;
 pub mod enums;
-pub mod klines;
-pub mod ping;
-pub mod time;
-pub mod default_symbols;
 pub mod exchange_information;
-pub mod trades;
-pub mod order;
-pub mod get_order;
 pub mod get_open_orders;
-pub mod cancel_order;
-pub mod cancel_all_open_orders_on_a_symbol;
-pub mod account_information;
-pub mod create_user_data_stream;
+pub mod get_order;
 pub mod keep_alive_user_data_stream;
+pub mod klines;
+pub mod models;
+pub mod order;
+pub mod ping;
+pub mod query_order;
+pub mod time;
+pub mod trades;
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
