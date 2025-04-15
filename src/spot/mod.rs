@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use hmac::digest::InvalidLength;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
@@ -27,6 +28,12 @@ pub struct MexcSpotApiClient {
     reqwest_client: reqwest::Client,
 }
 
+#[async_trait]
+trait MexcSpotApiTrait {
+    fn endpoint(&self) -> &MexcSpotApiEndpoint;
+    fn reqwest_client(&self) -> &reqwest::Client;
+}
+
 impl MexcSpotApiClient {
     pub fn new(endpoint: MexcSpotApiEndpoint) -> Self {
         let reqwest_client = reqwest::Client::builder()
@@ -52,6 +59,16 @@ impl Default for MexcSpotApiClient {
         Self::new(MexcSpotApiEndpoint::Base)
     }
 }
+
+impl MexcSpotApiTrait for MexcSpotApiClient {
+    fn endpoint(&self) -> &MexcSpotApiEndpoint {
+        &self.endpoint
+    }
+
+    fn reqwest_client(&self) -> &reqwest::Client {
+        &self.reqwest_client
+    }
+}   
 
 #[derive(Clone)]
 pub struct MexcSpotApiClientWithAuthentication {
@@ -100,6 +117,16 @@ impl MexcSpotApiClientWithAuthentication {
         let api_key = std::env::var("MEXC_API_KEY").expect("MEXC_API_KEY not set");
         let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
         Self::new(MexcSpotApiEndpoint::Base, api_key, secret_key)
+    }
+}
+
+impl MexcSpotApiTrait for MexcSpotApiClientWithAuthentication {
+    fn endpoint(&self) -> &MexcSpotApiEndpoint {
+        &self.endpoint
+    }
+
+    fn reqwest_client(&self) -> &reqwest::Client {
+        &self.reqwest_client
     }
 }
 

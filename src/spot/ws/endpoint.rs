@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub enum MexcWebsocketEndpoint {
     Base,
@@ -13,8 +15,8 @@ impl AsRef<str> for MexcWebsocketEndpoint {
     }
 }
 
-impl ToString for MexcWebsocketEndpoint {
-    fn to_string(&self) -> String {
-        self.as_ref().to_string()
+impl fmt::Display for MexcWebsocketEndpoint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
     }
 }

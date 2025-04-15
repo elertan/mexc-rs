@@ -50,27 +50,27 @@ pub(crate) struct RawStopLimitAccountOrdersChannelMessageData {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum ChannelMessageToAccountOrdersMessageError {
+pub(crate) enum ChannelMessageToAccountOrdersMessageInvalidity {
     #[error("Invalid channel message")]
-    InvalidChannelMessage,
+    ChannelMessage,
     #[error("Invalid order kind")]
-    InvalidOrderKind,
+    OrderKind,
     #[error("Invalid order status")]
-    InvalidOrderStatus,
+    OrderStatus,
     #[error("Invalid stop limit direction")]
-    InvalidStopLimitDirection,
+    StopLimitDirection,
     #[error("Invalid stop limit order state")]
-    InvalidStopLimitOrderState,
+    StopLimitOrderState,
 }
 
 pub(crate) fn channel_message_to_account_orders_message(
     message: &RawChannelMessage,
-) -> Result<AccountOrdersMessage, ChannelMessageToAccountOrdersMessageError> {
+) -> Result<AccountOrdersMessage, ChannelMessageToAccountOrdersMessageInvalidity> {
     let RawChannelMessageData::AccountOrders(account_orders_data) = &message.data else {
-        return Err(ChannelMessageToAccountOrdersMessageError::InvalidChannelMessage);
+        return Err(ChannelMessageToAccountOrdersMessageInvalidity::ChannelMessage);
     };
     let Some(asset) = &message.symbol else {
-        return Err(ChannelMessageToAccountOrdersMessageError::InvalidChannelMessage);
+        return Err(ChannelMessageToAccountOrdersMessageInvalidity::ChannelMessage);
     };
 
     let message = match account_orders_data {
@@ -90,7 +90,7 @@ pub(crate) fn channel_message_to_account_orders_message(
                 order_id: limit_or_market.i.clone(),
                 is_maker: limit_or_market.m == 1,
                 order_kind: OrderKind::from_u8(limit_or_market.o)
-                    .ok_or(ChannelMessageToAccountOrdersMessageError::InvalidOrderKind)?,
+                    .ok_or(ChannelMessageToAccountOrdersMessageInvalidity::OrderKind)?,
                 price: limit_or_market.p,
                 status: match limit_or_market.s {
                     1 => OrderStatus::New,
@@ -98,7 +98,7 @@ pub(crate) fn channel_message_to_account_orders_message(
                     3 => OrderStatus::PartiallyFilled,
                     4 => OrderStatus::Canceled,
                     5 => OrderStatus::PartiallyCanceled,
-                    _ => return Err(ChannelMessageToAccountOrdersMessageError::InvalidOrderStatus),
+                    _ => return Err(ChannelMessageToAccountOrdersMessageInvalidity::OrderStatus),
                 },
                 quantity: limit_or_market.v,
                 average_price: limit_or_market.ap,
@@ -120,13 +120,13 @@ pub(crate) fn channel_message_to_account_orders_message(
                     OrderSide::Sell
                 },
                 direction: StopLimitDirection::from_u8(stop_limit.T)
-                    .ok_or(ChannelMessageToAccountOrdersMessageError::InvalidStopLimitDirection)?,
+                    .ok_or(ChannelMessageToAccountOrdersMessageInvalidity::StopLimitDirection)?,
                 order_id: stop_limit.i.clone(),
                 order_kind: OrderKind::from_u8(stop_limit.o)
-                    .ok_or(ChannelMessageToAccountOrdersMessageError::InvalidOrderKind)?,
+                    .ok_or(ChannelMessageToAccountOrdersMessageInvalidity::OrderKind)?,
                 price: stop_limit.p,
                 state: StopLimitOrderState::from_u8(stop_limit.s)
-                    .ok_or(ChannelMessageToAccountOrdersMessageError::InvalidStopLimitOrderState)?,
+                    .ok_or(ChannelMessageToAccountOrdersMessageInvalidity::StopLimitOrderState)?,
                 quantity: stop_limit.v,
                 timestamp: message.timestamp,
             };

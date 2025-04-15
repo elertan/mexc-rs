@@ -169,7 +169,7 @@ async fn acquire_websockets_for_public_topics(
         let topics = websocket_entry.topics.read().await;
         let topics_facilitated_by_websocket = topics
             .iter()
-            .filter_map(|t| public_topics.contains(t).then(|| t.clone()))
+            .filter(|&t| public_topics.contains(t)).cloned()
             .collect::<Vec<_>>();
         if topics_facilitated_by_websocket.is_empty() {
             continue;
@@ -179,12 +179,9 @@ async fn acquire_websockets_for_public_topics(
 
     let topics_not_covered_matching_websockets = public_topics
         .iter()
-        .filter_map(|topic| {
-            matching_websockets
+        .filter(|&topic| matching_websockets
                 .iter()
-                .all(|(_, topics)| !topics.contains(topic))
-                .then(|| topic.clone())
-        })
+                .all(|(_, topics)| !topics.contains(topic))).cloned()
         .collect::<Vec<_>>();
 
     if topics_not_covered_matching_websockets.is_empty() {
@@ -298,7 +295,7 @@ async fn acquire_websockets_for_private_topics(
         let topics = websocket_entry.topics.read().await;
         let topics_facilitated_by_websocket = topics
             .iter()
-            .filter_map(|t| private_topics.contains(t).then(|| t.clone()))
+            .filter(|&t| private_topics.contains(t)).cloned()
             .collect::<Vec<_>>();
         if topics_facilitated_by_websocket.is_empty() {
             continue;
@@ -308,12 +305,9 @@ async fn acquire_websockets_for_private_topics(
 
     let topics_not_covered_matching_websockets = private_topics
         .iter()
-        .filter_map(|topic| {
-            matching_websockets
+        .filter(|&topic| matching_websockets
                 .iter()
-                .all(|(_, topics)| !topics.contains(topic))
-                .then(|| topic.clone())
-        })
+                .all(|(_, topics)| !topics.contains(topic))).cloned()
         .collect::<Vec<_>>();
 
     if topics_not_covered_matching_websockets.is_empty() {

@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
-use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::OrderType;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiTrait;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub enum ExchangeInformationParams<'a> {
@@ -36,7 +36,6 @@ pub struct ExchangeInformationSymbol {
     pub maker_commission: Decimal,
     pub taker_commission: Decimal,
 }
-
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,39 +75,34 @@ impl<'a> From<ExchangeInformationParams<'a>> for ExchangeInformationEndpointQuer
 
 #[async_trait]
 pub trait ExchangeInformationEndpoint {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput>;
-}
-
-async fn exchange_information_impl(
-    endpoint: &MexcSpotApiEndpoint,
-    client: &reqwest::Client,
-    params: ExchangeInformationParams<'_>,
-) -> ApiResult<ExchangeInformationOutput> {
-    let endpoint = format!("{}/api/v3/exchangeInfo", endpoint.as_ref());
-    let query_params = ExchangeInformationEndpointQueryParams::from(params);
-    let response = client.get(&endpoint).query(&query_params).send().await?;
-    let api_response = response.json::<ApiResponse<ExchangeInformationOutput>>().await?;
-    let output = api_response.into_api_result()?;
-
-    Ok(output)
+    async fn exchange_information(
+        &self,
+        params: ExchangeInformationParams<'_>,
+    ) -> ApiResult<ExchangeInformationOutput>;
 }
 
 #[async_trait]
-impl ExchangeInformationEndpoint for MexcSpotApiClient {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
-        exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
-    }
-}
+impl<T: MexcSpotApiTrait + Sync> ExchangeInformationEndpoint for T {
+    async fn exchange_information(
+        &self,
+        params: ExchangeInformationParams<'_>,
+    ) -> ApiResult<ExchangeInformationOutput> {
+        let endpoint = format!("{}/api/v3/exchangeInfo", self.endpoint().as_ref());
+        let query_params = ExchangeInformationEndpointQueryParams::from(params);
+        let response = self.reqwest_client().get(&endpoint).query(&query_params).send().await?;
+        let api_response = response
+            .json::<ApiResponse<ExchangeInformationOutput>>()
+            .await?;
+        let output = api_response.into_api_result()?;
 
-#[async_trait]
-impl ExchangeInformationEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn exchange_information(&self, params: ExchangeInformationParams<'_>) -> ApiResult<ExchangeInformationOutput> {
-        exchange_information_impl(&self.endpoint, &self.reqwest_client, params).await
+        Ok(output)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::spot::MexcSpotApiClient;
+
     use super::*;
 
     #[tokio::test]

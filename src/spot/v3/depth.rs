@@ -1,7 +1,7 @@
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiTrait;
 use async_trait::async_trait;
 use rust_decimal::Decimal;
-use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
-use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,35 +32,22 @@ pub trait DepthEndpoint {
     async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput>;
 }
 
-async fn depth_impl(
-    endpoint: &MexcSpotApiEndpoint,
-    client: &reqwest::Client,
-    params: DepthParams<'_>,
-) -> ApiResult<DepthOutput> {
-    let endpoint = format!("{}/api/v3/depth", endpoint.as_ref());
-    let response = client.get(&endpoint).query(&params).send().await?;
-    let api_response = response.json::<ApiResponse<DepthOutput>>().await?;
-    let output = api_response.into_api_result()?;
-
-    Ok(output)
-}
-
 #[async_trait]
-impl DepthEndpoint for MexcSpotApiClient {
+impl<T: MexcSpotApiTrait + Sync> DepthEndpoint for T {
     async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
-        depth_impl(&self.endpoint, &self.reqwest_client, params).await
-    }
-}
+        let endpoint = format!("{}/api/v3/depth", self.endpoint().as_ref());
+        let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
+        let api_response = response.json::<ApiResponse<DepthOutput>>().await?;
+        let output = api_response.into_api_result()?;
 
-#[async_trait]
-impl DepthEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
-        depth_impl(&self.endpoint, &self.reqwest_client, params).await
+        Ok(output)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::spot::MexcSpotApiClient;
+
     use super::*;
 
     #[tokio::test]

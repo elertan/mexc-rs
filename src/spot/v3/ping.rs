@@ -1,6 +1,6 @@
-use async_trait::async_trait;
-use crate::spot::{MexcSpotApiClient, MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
 use crate::spot::v3::ApiResult;
+use crate::spot::MexcSpotApiTrait;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait PingEndpoint {
@@ -8,29 +8,20 @@ pub trait PingEndpoint {
     async fn ping(&self) -> ApiResult<()>;
 }
 
-async fn ping_impl(endpoint: &MexcSpotApiEndpoint, client: &reqwest::Client) -> ApiResult<()> {
-    let endpoint = format!("{}/api/v3/ping", endpoint.as_ref());
-    client.get(&endpoint).send().await?;
-
-    Ok(())
-}
-
 #[async_trait]
-impl PingEndpoint for MexcSpotApiClient {
+impl<T: MexcSpotApiTrait + Sync> PingEndpoint for T {
     async fn ping(&self) -> ApiResult<()> {
-        ping_impl(&self.endpoint, &self.reqwest_client).await
-    }
-}
+        let endpoint = format!("{}/api/v3/ping", self.endpoint().as_ref());
+        self.reqwest_client().get(&endpoint).send().await?;
 
-#[async_trait]
-impl PingEndpoint for MexcSpotApiClientWithAuthentication {
-    async fn ping(&self) -> ApiResult<()> {
-        ping_impl(&self.endpoint, &self.reqwest_client).await
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::spot::MexcSpotApiClient;
+
     use super::*;
 
     #[tokio::test]
