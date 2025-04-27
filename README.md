@@ -57,7 +57,7 @@ More examples are available in the `examples/` directory.
 
 ## Testing
 
-Testing all the above inputs of the API is somewhat dangerous : the API is real and deals with real orders.
+Testing all the inputs of the API is somewhat dangerous : the API is real and deals with real orders.
 
 Four of the tests should fail :
  * spot::v3::cancel_order::tests::cancel_order
@@ -65,4 +65,4 @@ Four of the tests should fail :
  * spot::v3::order::tests::test_order
  * spot::v3::query_order::tests::query_order
 
- The `test_order` is an invalid price and 3 others fails to catch a real order that should be in your account.
+ The `test_order` is an invalid price and 3 others fails to catch a real order that should be in your account. If you really need to test, change the orders values, and create the expected orders in your account, at your own risk.
