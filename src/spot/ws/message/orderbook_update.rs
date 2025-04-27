@@ -37,7 +37,13 @@ pub(crate) fn channel_message_to_spot_orderbook_update_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToOrderbookUpdateMessageError::NoOrderbookUpdateMessage);
     };
-    let RawEventChannelMessageData::OrdersUpdate{ asks, bids, version, .. } = &event else {
+    let RawEventChannelMessageData::OrdersUpdate {
+        asks,
+        bids,
+        version,
+        ..
+    } = &event
+    else {
         return Err(ChannelMessageToOrderbookUpdateMessageError::NoOrderbookUpdateMessage);
     };
 

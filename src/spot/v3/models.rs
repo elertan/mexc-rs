@@ -1,6 +1,6 @@
+use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,4 +29,3 @@ pub struct Order {
     #[serde(rename = "origQuoteOrderQty")]
     pub original_quote_order_qty: Decimal,
 }
-

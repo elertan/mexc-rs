@@ -46,7 +46,7 @@ pub(crate) fn channel_message_to_spot_deals_message(
     let RawChannelMessageData::Event(event) = &channel_message.data else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };
-    let RawEventChannelMessageData::Deals{deals, .. } = &event else {
+    let RawEventChannelMessageData::Deals { deals, .. } = &event else {
         return Err(ChannelMessageToSpotDealsMessageError::NoDealsMessage);
     };
 

@@ -1,9 +1,9 @@
-use rust_decimal::Decimal;
 use dotenv::dotenv;
 use mexc_rs::spot::v3::cancel_order::{CancelOrderEndpoint, CancelOrderParams};
 use mexc_rs::spot::v3::enums::{OrderSide, OrderType};
 use mexc_rs::spot::v3::order::{OrderEndpoint, OrderParams};
 use mexc_rs::spot::{MexcSpotApiClientWithAuthentication, MexcSpotApiEndpoint};
+use rust_decimal::Decimal;
 use std::str::FromStr;
 
 #[tokio::main]

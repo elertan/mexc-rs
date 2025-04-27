@@ -1,7 +1,7 @@
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crate::spot::{MexcSpotApiClientWithAuthentication};
-use crate::spot::v3::{ApiResponse, ApiResult};
 
 #[derive(Debug, serde::Serialize)]
 pub struct CreateUserDataStreamQuery {
@@ -29,7 +29,9 @@ impl CreateUserDataStreamEndpoint for MexcSpotApiClientWithAuthentication {
         };
         let query = self.sign_query(&query)?;
         let response = self.reqwest_client.post(&url).query(&query).send().await?;
-        let api_response = response.json::<ApiResponse<CreateUserDataStreamOutput>>().await?;
+        let api_response = response
+            .json::<ApiResponse<CreateUserDataStreamOutput>>()
+            .await?;
         let output = api_response.into_api_result()?;
 
         Ok(output)

@@ -36,7 +36,12 @@ pub trait DepthEndpoint {
 impl<T: MexcSpotApiTrait + Sync> DepthEndpoint for T {
     async fn depth(&self, params: DepthParams<'_>) -> ApiResult<DepthOutput> {
         let endpoint = format!("{}/api/v3/depth", self.endpoint().as_ref());
-        let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
+        let response = self
+            .reqwest_client()
+            .get(&endpoint)
+            .query(&params)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<DepthOutput>>().await?;
         let output = api_response.into_api_result()?;
 

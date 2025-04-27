@@ -1,8 +1,8 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
 use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,8 +50,15 @@ impl AccountInformationEndpoint for MexcSpotApiClientWithAuthentication {
             recv_window: None,
             timestamp: Utc::now(),
         })?;
-        let response = self.reqwest_client.get(endpoint).query(&query).send().await?;
-        let api_response = response.json::<ApiResponse<AccountInformationOutput>>().await?;
+        let response = self
+            .reqwest_client
+            .get(endpoint)
+            .query(&query)
+            .send()
+            .await?;
+        let api_response = response
+            .json::<ApiResponse<AccountInformationOutput>>()
+            .await?;
         let output = api_response.into_api_result()?;
 
         Ok(output)

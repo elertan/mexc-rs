@@ -68,7 +68,7 @@ impl MexcSpotApiTrait for MexcSpotApiClient {
     fn reqwest_client(&self) -> &reqwest::Client {
         &self.reqwest_client
     }
-}   
+}
 
 #[derive(Clone)]
 pub struct MexcSpotApiClientWithAuthentication {

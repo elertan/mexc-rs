@@ -1,8 +1,8 @@
 // https://mxcdevelop.github.io/apidocs/contract_v1_en/#error-code-example
 
-use std::fmt::{Display, Formatter};
-use crate::futures::GetAuthHeaderMapError;
 use crate::futures::response::ErrorApiResponse;
+use crate::futures::GetAuthHeaderMapError;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {

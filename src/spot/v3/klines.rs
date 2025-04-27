@@ -65,8 +65,13 @@ pub trait KlinesEndpoint {
 impl<T: MexcSpotApiTrait + Sync> KlinesEndpoint for T {
     async fn klines(&self, params: KlinesParams<'_>) -> ApiResult<KlinesOutput> {
         let endpoint = format!("{}/api/v3/klines", self.endpoint().as_ref());
-        
-        let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
+
+        let response = self
+            .reqwest_client()
+            .get(&endpoint)
+            .query(&params)
+            .send()
+            .await?;
         let json = response.text().await?;
 
         if let Ok(err_response) = serde_json::from_str::<ErrorResponse>(&json) {

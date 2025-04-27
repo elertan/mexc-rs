@@ -1,7 +1,7 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter};
 use crate::futures::error::{ApiError, ErrorCode};
 use crate::futures::result::ApiResult;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
@@ -43,6 +43,10 @@ impl Error for ErrorApiResponse {}
 
 impl Display for ErrorApiResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error response: code: {}, msg: {}", self.code, self.message)
+        write!(
+            f,
+            "Error response: code: {}, msg: {}",
+            self.code, self.message
+        )
     }
 }

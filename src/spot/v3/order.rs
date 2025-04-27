@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
-use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::{OrderSide, OrderType};
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct OrderParams<'a> {
@@ -69,7 +69,6 @@ pub struct OrderOutput {
     pub transact_time: DateTime<Utc>,
 }
 
-
 #[async_trait]
 pub trait OrderEndpoint {
     async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput>;
@@ -82,7 +81,12 @@ impl OrderEndpoint for MexcSpotApiClientWithAuthentication {
         let query = OrderQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
-        let response = self.reqwest_client.post(&endpoint).query(&query_with_signature).send().await?;
+        let response = self
+            .reqwest_client
+            .post(&endpoint)
+            .query(&query_with_signature)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<OrderOutput>>().await?;
         let output = api_response.into_api_result()?;
 
@@ -92,8 +96,8 @@ impl OrderEndpoint for MexcSpotApiClientWithAuthentication {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use super::*;
+    use std::str::FromStr;
 
     #[tokio::test]
     async fn test_order() {
