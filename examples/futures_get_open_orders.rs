@@ -1,6 +1,6 @@
 use dotenv::dotenv;
-use mexc_rs::futures::{MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
 use mexc_rs::futures::v1::endpoints::get_open_orders::{GetOpenOrders, GetOpenOrdersParams};
+use mexc_rs::futures::{MexcFuturesApiClientWithAuthentication, MexcFuturesApiEndpoint};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -11,7 +11,11 @@ async fn main() -> anyhow::Result<()> {
     let api_key = std::env::var("MEXC_API_KEY").expect("MEXC_API_KEY not set");
     let secret_key = std::env::var("MEXC_SECRET_KEY").expect("MEXC_SECRET_KEY not set");
 
-    let client = MexcFuturesApiClientWithAuthentication::new(MexcFuturesApiEndpoint::Base, api_key, secret_key);
+    let client = MexcFuturesApiClientWithAuthentication::new(
+        MexcFuturesApiEndpoint::Base,
+        api_key,
+        secret_key,
+    );
     let params = GetOpenOrdersParams {
         page_num: 1,
         page_size: 20,

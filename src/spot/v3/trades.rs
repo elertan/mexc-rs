@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiTrait;
-use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::TradeType;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiTrait;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug, serde::Serialize)]
 pub struct TradesParams<'a> {
@@ -42,15 +42,18 @@ pub trait TradesEndpoint {
 #[async_trait]
 impl<T: MexcSpotApiTrait + Sync> TradesEndpoint for T {
     async fn trades(&self, params: TradesParams<'_>) -> ApiResult<TradesOutput> {
-    let endpoint = format!("{}/api/v3/trades", self.endpoint().as_ref());
-    let response = self.reqwest_client().get(&endpoint).query(&params).send().await?;
-    let api_response = response.json::<ApiResponse<Vec<Trade>>>().await?;
-    let trades = api_response.into_api_result()?;
+        let endpoint = format!("{}/api/v3/trades", self.endpoint().as_ref());
+        let response = self
+            .reqwest_client()
+            .get(&endpoint)
+            .query(&params)
+            .send()
+            .await?;
+        let api_response = response.json::<ApiResponse<Vec<Trade>>>().await?;
+        let trades = api_response.into_api_result()?;
 
-    Ok(TradesOutput {
-        trades
-    })
-}
+        Ok(TradesOutput { trades })
+    }
 }
 
 #[cfg(test)]

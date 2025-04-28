@@ -1,7 +1,7 @@
-use std::fmt::{Display, Formatter};
+use crate::spot::SignQueryError;
 use num_traits::FromPrimitive;
 use reqwest::StatusCode;
-use crate::spot::SignQueryError;
+use std::fmt::{Display, Formatter};
 
 pub mod account_information;
 pub mod avg_price;
@@ -96,11 +96,13 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(err) => Err(err),
-            Self::ErrorStringifiedCode(esc) => Err(esc.try_into().map_err(|_err| ErrorResponse {
-                msg: "Stringified error code cannot be parsed".to_string(),
-                code: ErrorCode::InvalidResponse,
-                _extend: None,
-            })?)
+            Self::ErrorStringifiedCode(esc) => {
+                Err(esc.try_into().map_err(|_err| ErrorResponse {
+                    msg: "Stringified error code cannot be parsed".to_string(),
+                    code: ErrorCode::InvalidResponse,
+                    _extend: None,
+                })?)
+            }
         }
     }
 
@@ -108,11 +110,15 @@ impl<T> ApiResponse<T> {
         match self {
             Self::Success(output) => Ok(output),
             Self::Error(response) => Err(ApiError::ErrorResponse(response)),
-            Self::ErrorStringifiedCode(esc) => Err(ApiError::ErrorResponse(esc.try_into().map_err(|_err| ErrorResponse {
-                msg: "Stringified error code cannot be parsed".to_string(),
-                code: ErrorCode::InvalidResponse,
-                _extend: None,
-            })?)),
+            Self::ErrorStringifiedCode(esc) => {
+                Err(ApiError::ErrorResponse(esc.try_into().map_err(|_err| {
+                    ErrorResponse {
+                        msg: "Stringified error code cannot be parsed".to_string(),
+                        code: ErrorCode::InvalidResponse,
+                        _extend: None,
+                    }
+                })?))
+            }
         }
     }
 }
@@ -123,7 +129,6 @@ pub struct ErrorResponse {
     pub msg: String,
     pub _extend: Option<serde_json::Value>,
 }
-
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ErrorResponseStringifiedCode {
@@ -153,7 +158,15 @@ impl TryFrom<ErrorResponseStringifiedCode> for ErrorResponse {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde_repr::Deserialize_repr, strum_macros::IntoStaticStr, num_derive::FromPrimitive)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    serde_repr::Deserialize_repr,
+    strum_macros::IntoStaticStr,
+    num_derive::FromPrimitive,
+)]
 #[repr(i32)]
 pub enum ErrorCode {
     UnknownOrderSent = -2011,

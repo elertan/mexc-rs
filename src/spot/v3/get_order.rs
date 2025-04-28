@@ -1,8 +1,8 @@
+use crate::spot::v3::models::Order;
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
-use crate::spot::v3::{ApiResponse, ApiResult};
-use crate::spot::v3::models::Order;
 
 #[derive(Debug)]
 pub struct GetOrderParams<'a> {
@@ -40,7 +40,6 @@ impl<'a> From<GetOrderParams<'a>> for GetOrderQuery<'a> {
     }
 }
 
-
 #[async_trait]
 pub trait GetOrderEndpoint {
     async fn get_order(&self, params: GetOrderParams<'_>) -> ApiResult<Order>;
@@ -53,7 +52,12 @@ impl GetOrderEndpoint for MexcSpotApiClientWithAuthentication {
         let query = GetOrderQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
-        let response = self.reqwest_client.get(&endpoint).query(&query_with_signature).send().await?;
+        let response = self
+            .reqwest_client
+            .get(&endpoint)
+            .query(&query_with_signature)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<Order>>().await?;
         let output = api_response.into_api_result()?;
 

@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
-use crate::spot::MexcSpotApiClientWithAuthentication;
-use crate::spot::v3::{ApiResponse, ApiResult};
 use crate::spot::v3::enums::{OrderSide, OrderStatus, OrderType};
+use crate::spot::v3::{ApiResponse, ApiResult};
+use crate::spot::MexcSpotApiClientWithAuthentication;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct CancelOrderParams<'a> {
@@ -63,7 +63,6 @@ pub struct CancelOrderOutput {
     pub side: OrderSide,
 }
 
-
 #[async_trait]
 pub trait CancelOrderEndpoint {
     async fn cancel_order(&self, params: CancelOrderParams<'_>) -> ApiResult<CancelOrderOutput>;
@@ -76,7 +75,12 @@ impl CancelOrderEndpoint for MexcSpotApiClientWithAuthentication {
         let query = CancelOrderQuery::from(params);
         let query_with_signature = self.sign_query(query)?;
 
-        let response = self.reqwest_client.delete(&endpoint).query(&query_with_signature).send().await?;
+        let response = self
+            .reqwest_client
+            .delete(&endpoint)
+            .query(&query_with_signature)
+            .send()
+            .await?;
         let api_response = response.json::<ApiResponse<CancelOrderOutput>>().await?;
         let output = api_response.into_api_result()?;
 

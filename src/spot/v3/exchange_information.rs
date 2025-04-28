@@ -89,7 +89,12 @@ impl<T: MexcSpotApiTrait + Sync> ExchangeInformationEndpoint for T {
     ) -> ApiResult<ExchangeInformationOutput> {
         let endpoint = format!("{}/api/v3/exchangeInfo", self.endpoint().as_ref());
         let query_params = ExchangeInformationEndpointQueryParams::from(params);
-        let response = self.reqwest_client().get(&endpoint).query(&query_params).send().await?;
+        let response = self
+            .reqwest_client()
+            .get(&endpoint)
+            .query(&query_params)
+            .send()
+            .await?;
         let api_response = response
             .json::<ApiResponse<ExchangeInformationOutput>>()
             .await?;
