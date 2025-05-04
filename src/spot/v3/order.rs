@@ -74,6 +74,8 @@ pub trait OrderEndpoint {
     async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput>;
 }
 
+// 04/05/2025 Note for anyone trying to implement /api/v3/order/test : it's useless, the api just check fied names
+
 #[async_trait]
 impl OrderEndpoint for MexcSpotApiClientWithAuthentication {
     async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput> {
