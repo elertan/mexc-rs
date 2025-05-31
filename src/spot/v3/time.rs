@@ -3,7 +3,7 @@ use crate::spot::MexcSpotApiTrait;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TimeOutput {
     #[serde(with = "chrono::serde::ts_seconds")]
