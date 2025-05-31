@@ -41,7 +41,7 @@ impl<'a> From<CancelOrderParams<'a>> for CancelOrderQuery<'a> {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CancelOrderOutput {
     pub symbol: String,

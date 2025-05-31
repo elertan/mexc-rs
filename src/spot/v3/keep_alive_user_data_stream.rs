@@ -16,7 +16,7 @@ pub struct KeepAliveUserDataStreamQuery<'a> {
     listen_key: &'a str,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct KeepAliveUserDataStreamOutput {
     pub listen_key: String,

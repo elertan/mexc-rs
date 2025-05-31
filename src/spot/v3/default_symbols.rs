@@ -4,7 +4,7 @@ use crate::spot::{
 };
 use async_trait::async_trait;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DefaultsSymbolsOutput {
     pub code: i32,

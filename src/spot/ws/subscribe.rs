@@ -56,7 +56,7 @@ impl SubscribeParams {
     // }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SubscribeOutput {}
 
 #[derive(Debug, thiserror::Error)]

@@ -54,7 +54,7 @@ impl<'a> From<OrderParams<'a>> for OrderQuery<'a> {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderOutput {
     pub symbol: String,
@@ -73,6 +73,8 @@ pub struct OrderOutput {
 pub trait OrderEndpoint {
     async fn order(&self, params: OrderParams<'_>) -> ApiResult<OrderOutput>;
 }
+
+// 04/05/2025 Note for anyone trying to implement /api/v3/order/test : it's useless, the api just check fied names
 
 #[async_trait]
 impl OrderEndpoint for MexcSpotApiClientWithAuthentication {

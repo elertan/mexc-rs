@@ -31,12 +31,12 @@ impl<'a> From<CancelAllOpenOrdersOnASymbolParams<'a>> for CancelAllOpenOrdersOnA
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CancelAllOpenOrdersOnASymbolOutput {
     pub canceled_orders: Vec<CanceledOrder>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CanceledOrder {
     pub symbol: String,

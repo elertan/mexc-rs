@@ -10,7 +10,7 @@ pub struct AvgParams<'a> {
     pub symbol: &'a str,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AvgOutput {
     pub mins: u64,
