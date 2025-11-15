@@ -37,8 +37,9 @@ impl Topic {
                 interval = kline_topic.interval.as_ref()
             ),
             Topic::Depth(depth_topic) => format!(
-                "spot@public.increase.depth.v3.api@{symbol}",
-                symbol = depth_topic.symbol
+                "spot@public.aggre.depth.v3.api.pb@{freq}@{symbol}",
+                symbol = depth_topic.symbol,
+                freq = depth_topic.frequency.to_api_str()
             ),
         }
     }
@@ -68,12 +69,31 @@ impl KlineTopic {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum DepthTopicFrequency {
+    Freq10ms,
+    Freq100ms,
+}
+
+impl DepthTopicFrequency {
+    pub fn to_api_str(&self) -> &'static str {
+        match self {
+            DepthTopicFrequency::Freq10ms => "10ms",
+            DepthTopicFrequency::Freq100ms => "100ms",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct DepthTopic {
     pub symbol: String,
+    pub frequency: DepthTopicFrequency,
 }
 
 impl DepthTopic {
     pub fn new(symbol: String) -> Self {
-        Self { symbol }
+        Self {
+            symbol,
+            frequency: DepthTopicFrequency::Freq100ms,
+        }
     }
 }
