@@ -12,7 +12,7 @@ pub enum ExchangeInformationParams<'a> {
     Symbols(&'a [&'a str]),
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ExchangeInformationSymbol {
     pub symbol: String,
@@ -37,7 +37,7 @@ pub struct ExchangeInformationSymbol {
     pub taker_commission: Decimal,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ExchangeInformationOutput {
     pub timezone: String,

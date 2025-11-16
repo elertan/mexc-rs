@@ -30,7 +30,7 @@ impl<'a> From<GetOpenOrdersParams<'a>> for GetOrderQuery<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GetOrderOutput {
     pub orders: Vec<Order>,
 }
