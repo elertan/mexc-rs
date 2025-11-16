@@ -1,0 +1,3 @@
+[submodule "websocket-proto"]
+	path = websocket-proto
+	url = https://github.com/mexcdevelop/websocket-proto

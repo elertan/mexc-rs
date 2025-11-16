@@ -1,3 +1,8 @@
+use self::orderbook_update::{
+    channel_message_to_spot_orderbook_update_message, OrderbookUpdateMessage, RawOrderData,
+};
+use crate::proto::push_data_v3_api_wrapper::Body::PublicAggreDepths;
+use crate::proto::{PublicAggreDepthsV3Api, PushDataV3ApiWrapper};
 use crate::spot::ws::message::account_deals::{
     channel_message_to_account_deals_message, AccountDealsMessage, RawAccountDealsData,
 };
@@ -15,10 +20,7 @@ use crate::spot::ws::message::kline::{
     channel_message_to_spot_kline_message, RawKlineData, SpotKlineMessage,
 };
 use chrono::{DateTime, Utc};
-
-use self::orderbook_update::{
-    channel_message_to_spot_orderbook_update_message, OrderbookUpdateMessage, RawOrderData,
-};
+use prost::Message as ProstMessage;
 
 pub mod account_deals;
 pub mod account_orders;
@@ -35,6 +37,20 @@ pub enum Message {
     Deals(SpotDealsMessage),
     Kline(SpotKlineMessage),
     OrderbookUpdate(OrderbookUpdateMessage),
+    PublicAggreDepthsV3Api(PublicAggreDepthsV3Api),
+}
+
+impl Message {
+    pub fn from_proto(data: &[u8]) -> Result<Message, ()> {
+        let wrapper = PushDataV3ApiWrapper::decode(data).or_else(|_| Err(()))?;
+        let Some(body) = wrapper.body else {
+            return Err(());
+        };
+        match body {
+            PublicAggreDepths(depth) => Ok(Message::PublicAggreDepthsV3Api(depth)),
+            _ => Err(()),
+        }
+    }
 }
 
 impl TryFrom<&RawMessage> for Message {

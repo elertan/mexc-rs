@@ -784,28 +784,37 @@ fn spawn_websocket_receiver_task(
                         },
                     };
 
-                    let text = match message {
-                        Message::Text(text) => text,
+                    let mex_msg = match message {
+                        Message::Text(text) => {
+                            let raw_message = match serde_json::from_str::<message::RawMessage>(&text) {
+                                Ok(x) => x,
+                                Err(err) => {
+                                    cancellation_token.cancel();
+                                    tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
+                                    break;
+                                }
+                            };
+
+                            let Ok(mexc_message) = message::Message::try_from(&raw_message) else {
+                                tracing::trace!("Received unrecognized message: {raw_message:?}");
+                                continue;
+                            };
+                            mexc_message
+                        },
+                        Message::Binary(proto) => {
+                            let Ok(mexc_message) = message::Message::from_proto(&proto)  else {
+                                tracing::trace!("Fail to parse binary message: {}", hex::encode(&proto));
+                                continue;
+                            };
+                            mexc_message
+                        }
                         _ => {
                             tracing::debug!("Received non-text message: {:?}", message);
                             continue;
                         }
                     };
 
-                    let raw_message = match serde_json::from_str::<message::RawMessage>(&text) {
-                        Ok(x) => x,
-                        Err(err) => {
-                            cancellation_token.cancel();
-                            tracing::error!("Failed to deserialize message: {}\njson: {}", err, &text);
-                            break;
-                        }
-                    };
-                    let mexc_message_result: Result<message::Message, ()> = (&raw_message).try_into();
-                    let Ok(mexc_message) = mexc_message_result else {
-                        continue;
-                    };
-
-                    match broadcast_tx.send(Arc::new(mexc_message)) {
+                     match broadcast_tx.send(Arc::new(mex_msg)) {
                         Ok(_) => {}
                         Err(err) => {
                             // cancellation_token.cancel();
@@ -813,6 +822,8 @@ fn spawn_websocket_receiver_task(
                             break;
                         }
                     }
+
+
                 }
             }
         }

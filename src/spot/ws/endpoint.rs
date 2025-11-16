@@ -9,7 +9,7 @@ pub enum MexcWebsocketEndpoint {
 impl AsRef<str> for MexcWebsocketEndpoint {
     fn as_ref(&self) -> &str {
         match self {
-            MexcWebsocketEndpoint::Base => "wss://wbs.mexc.com/ws",
+            MexcWebsocketEndpoint::Base => "wss://wbs-api.mexc.com/ws",
             MexcWebsocketEndpoint::Custom(endpoint) => endpoint,
         }
     }
